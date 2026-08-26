@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #define NUM_THREADS 8
+#define MAX_THREADS 256
 
 typedef struct
 {
@@ -13,8 +14,8 @@ typedef struct
 
 // POSIX thread declarations and scheduling attributes
 //
-pthread_t threads[NUM_THREADS];
-threadParams_t threadParams[NUM_THREADS];
+pthread_t threads[MAX_THREADS];
+threadParams_t threadParams[MAX_THREADS];
 
 
 void *Hello_thread(void *threadp);
@@ -28,6 +29,11 @@ int main(int argc, char *argv[])
     else
     {
         sscanf(argv[1], "%d", &thread_count);
+    }
+    if(thread_count > MAX_THREADS)
+    {
+        printf("Threads requested exceeds MAX thread descriptors\n");
+        exit(-1);
     }
 
    for(i=0; i < thread_count; i++)
@@ -43,8 +49,10 @@ int main(int argc, char *argv[])
 
    }
 
-   for(i=0;i<NUM_THREADS;i++)
+   for(i=0;i<thread_count;i++)
        pthread_join(threads[i], NULL);
+
+   printf("all %d threads joined\n", i);
 
     return 0;
 }
