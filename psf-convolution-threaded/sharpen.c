@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
     UINT64 microsecs=0, millisecs=0;
     FLOAT temp, fstart, fnow;
     struct timespec start, now;
-
+    int thread_count = 4;
     clock_gettime(CLOCK_MONOTONIC, &start);
     fstart = (FLOAT)start.tv_sec  + (FLOAT)start.tv_nsec / 1000000000.0;
     
@@ -144,10 +144,11 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &now);
     fnow = (FLOAT)now.tv_sec  + (FLOAT)now.tv_nsec / 1000000000.0;
     printf("\nstart test at %lf\n", fnow-fstart);
-
     for(iter=0; iter < ITERATIONS; iter++)
     {
         // Skip first and last row, no neighbors to convolve with
+
+#pragma omp parallel for num_threads(thread_count)
         for(i=1; i<((IMG_HEIGHT)-1); i++)
         {
 
