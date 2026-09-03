@@ -10,13 +10,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <time.h>
+#include <omp.h>
 
-
-//#define IMG_HEIGHT (300)
-//#define IMG_WIDTH (400)
-
-#define IMG_HEIGHT (3000)
-#define IMG_WIDTH (4000)
+#define IMG_HEIGHT (960)
+#define IMG_WIDTH (1280)
 
 #define HEADER_SIZE (40)
 
@@ -148,7 +145,7 @@ int main(int argc, char *argv[])
     {
         // Skip first and last row, no neighbors to convolve with
 
-#pragma omp parallel for num_threads(thread_count)
+#pragma omp parallel for num_threads(thread_count) private(j,temp)
         for(i=1; i<((IMG_HEIGHT)-1); i++)
         {
 
