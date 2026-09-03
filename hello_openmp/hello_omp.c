@@ -6,7 +6,7 @@ void Hello_thread(void);
 
 int main(int argc, char *argv[])
 {
-    int thread_count;
+    int thread_count = 4;
 
     if(argc < 2)
         printf("usage: hello_omp <number threads>\n");
@@ -15,8 +15,11 @@ int main(int argc, char *argv[])
         sscanf(argv[1], "%d", &thread_count);
     }
 
-#pragma omp parallel num_threads(thread_count)
-    Hello_thread();
+#pragma omp parallel for num_threads(thread_count)
+    for(int i = 0 ; i < 16 ; i++)
+    {
+        Hello_thread();
+    }
 
     return 0;
 }
