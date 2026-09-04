@@ -14,8 +14,8 @@
 // This could be simplified into horizontal slices (rows) of the 1D (or 2D version) of the image array.
 //
 
-#define IMG_HEIGHT (1280)
-#define IMG_WIDTH (960)
+#define IMG_HEIGHT (960)
+#define IMG_WIDTH (1280)
 
 //#define IMG_HEIGHT (300)
 //#define IMG_WIDTH (400)
@@ -36,8 +36,8 @@
 
 
 // Row and column threads to process in tiles for 4:3 aspect ratio
-#define NUM_ROW_THREADS (3)
-#define NUM_COL_THREADS (4)
+#define NUM_ROW_THREADS (2)
+#define NUM_COL_THREADS (2)
 
 //#define NUM_ROW_THREADS (6)
 //#define NUM_COL_THREADS (8)
@@ -310,23 +310,16 @@ int main(int argc, char *argv[])
             // Adapting this code for array indexing for any number of threads is left as an exercise for
             // students.
             
-#if (NUM_ROW_THREADS == 3) && (NUM_COL_THREADS == 4)
+#if (NUM_ROW_THREADS == 2) && (NUM_COL_THREADS == 2)
             if(thread_idx == 0) {idx=1; jdx=1;}
-            if(thread_idx == 1) {idx=1; jdx=(thread_idx*(IMG_W_SLICE-1));}
-            if(thread_idx == 2) {idx=1; jdx=(thread_idx*(IMG_W_SLICE-1));}
-            if(thread_idx == 3) {idx=1; jdx=(thread_idx*(IMG_W_SLICE-1));}
+            if(thread_idx == 1) {idx=1; jdx=IMG_W_SLICE;}
 
-            if(thread_idx == 4) {idx=IMG_H_SLICE; jdx=(thread_idx*(IMG_W_SLICE-1));}
-            if(thread_idx == 5) {idx=IMG_H_SLICE; jdx=(thread_idx*(IMG_W_SLICE-1));}
-            if(thread_idx == 6) {idx=IMG_H_SLICE; jdx=(thread_idx*(IMG_W_SLICE-1));}
-            if(thread_idx == 7) {idx=IMG_H_SLICE; jdx=(thread_idx*(IMG_W_SLICE-1));}
+            if(thread_idx == 2) {idx=IMG_H_SLICE; jdx=1;}
+            if(thread_idx == 3) {idx=IMG_H_SLICE; jdx=IMG_W_SLICE;}
 
-            if(thread_idx == 8) {idx=(2*(IMG_H_SLICE-1)); jdx=(thread_idx*(IMG_W_SLICE-1));}
-            if(thread_idx == 9) {idx=(2*(IMG_H_SLICE-1)); jdx=(thread_idx*(IMG_W_SLICE-1));}
-            if(thread_idx == 10) {idx=(2*(IMG_H_SLICE-1)); jdx=(thread_idx*(IMG_W_SLICE-1));}
-            if(thread_idx == 11) {idx=(2*(IMG_H_SLICE-1)); jdx=(thread_idx*(IMG_W_SLICE-1));}
+
 #else
-#error "Code must be re-written for thread indexing into array for thread 4:3 thread gridding and 12 threads"
+#error "Code updated to support 2x2 grid using 4 threads"
 #endif
 
             //printf("idx=%d, jdx=%d\n", idx, jdx);
