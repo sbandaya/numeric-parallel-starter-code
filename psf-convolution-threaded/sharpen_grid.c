@@ -14,8 +14,8 @@
 // This could be simplified into horizontal slices (rows) of the 1D (or 2D version) of the image array.
 //
 
-#define IMG_HEIGHT (3000)
-#define IMG_WIDTH (4000)
+#define IMG_HEIGHT (1280)
+#define IMG_WIDTH (960)
 
 //#define IMG_HEIGHT (300)
 //#define IMG_WIDTH (400)
