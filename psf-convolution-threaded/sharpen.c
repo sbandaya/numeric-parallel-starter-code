@@ -10,14 +10,20 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <time.h>
-#include <omp.h>
+
 
 #define IMG_HEIGHT (960)
 #define IMG_WIDTH (1280)
 
+//#define IMG_HEIGHT (300)
+//#define IMG_WIDTH (400)
+
+//#define IMG_HEIGHT (3000)
+//#define IMG_WIDTH (4000)
+
 #define HEADER_SIZE (40)
 
-#define ITERATIONS (90)
+#define ITERATIONS (900)
 
 #define FAST_IO
 
@@ -46,7 +52,7 @@ UINT8 RGB[IMG_HEIGHT*IMG_WIDTH*3];
 #define F 8.0
 //#define F 80.0
 
-static const FLOAT PSF[9] = {-K/F, -K/F, -K/F, -K/F, K+1.0, -K/F, -K/F, -K/F, -K/F};
+FLOAT PSF[9] = {-K/F, -K/F, -K/F, -K/F, K+1.0, -K/F, -K/F, -K/F, -K/F};
 
 
 int main(int argc, char *argv[])
@@ -55,7 +61,8 @@ int main(int argc, char *argv[])
     UINT64 microsecs=0, millisecs=0;
     FLOAT temp, fstart, fnow;
     struct timespec start, now;
-    int thread_count = omp_get_num_procs() ;
+    int thread_count=4;
+
     clock_gettime(CLOCK_MONOTONIC, &start);
     fstart = (FLOAT)start.tv_sec  + (FLOAT)start.tv_nsec / 1000000000.0;
     
@@ -141,11 +148,12 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &now);
     fnow = (FLOAT)now.tv_sec  + (FLOAT)now.tv_nsec / 1000000000.0;
     printf("\nstart test at %lf\n", fnow-fstart);
+
+// We should try a pragma here! This is O(n^3)
+//#pragma omp parallel for num_threads(thread_count)
     for(iter=0; iter < ITERATIONS; iter++)
     {
         // Skip first and last row, no neighbors to convolve with
-
-#pragma omp parallel for num_threads(thread_count) private(j,temp) 
         for(i=1; i<((IMG_HEIGHT)-1); i++)
         {
 

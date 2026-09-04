@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
     {
         // Skip first and last row, no neighbors to convolve with
 
-#pragma omp parallel for num_threads(thread_count) private(j,temp) 
+//#pragma omp parallel for num_threads(thread_count) private(j,temp) 
         for(i=1; i<((IMG_HEIGHT)-1); i++)
         {
 
