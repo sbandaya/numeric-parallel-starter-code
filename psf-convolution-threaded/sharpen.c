@@ -46,7 +46,7 @@ UINT8 RGB[IMG_HEIGHT*IMG_WIDTH*3];
 #define F 8.0
 //#define F 80.0
 
-FLOAT PSF[9] = {-K/F, -K/F, -K/F, -K/F, K+1.0, -K/F, -K/F, -K/F, -K/F};
+static const FLOAT PSF[9] = {-K/F, -K/F, -K/F, -K/F, K+1.0, -K/F, -K/F, -K/F, -K/F};
 
 
 int main(int argc, char *argv[])
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     UINT64 microsecs=0, millisecs=0;
     FLOAT temp, fstart, fnow;
     struct timespec start, now;
-    int thread_count = 4;
+    int thread_count = 100;
     clock_gettime(CLOCK_MONOTONIC, &start);
     fstart = (FLOAT)start.tv_sec  + (FLOAT)start.tv_nsec / 1000000000.0;
     
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
     {
         // Skip first and last row, no neighbors to convolve with
 
-#pragma omp parallel for num_threads(thread_count) private(j,temp)
+#pragma omp parallel for num_threads(thread_count) private(j,temp) 
         for(i=1; i<((IMG_HEIGHT)-1); i++)
         {
 
