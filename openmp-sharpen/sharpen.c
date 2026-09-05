@@ -71,6 +71,8 @@ void conv(void)
 
     int i; 
     int j;
+    FLOAT outer = 0;
+    FLOAT inner = 0;
     FLOAT temp;
 
     if (my_rank == (thread_count - 1))
@@ -90,43 +92,25 @@ void conv(void)
         for (j = 1; j < (IMG_WIDTH - 1); j++)
         {
             temp = 0;
-            temp += (PSF[0] * (FLOAT)R[((i-1)*IMG_WIDTH)+j-1]);
-            temp += (PSF[1] * (FLOAT)R[((i-1)*IMG_WIDTH)+j]);
-            temp += (PSF[2] * (FLOAT)R[((i-1)*IMG_WIDTH)+j+1]);
-            temp += (PSF[3] * (FLOAT)R[((i)*IMG_WIDTH)+j-1]);
-            temp += (PSF[4] * (FLOAT)R[((i)*IMG_WIDTH)+j]);
-            temp += (PSF[5] * (FLOAT)R[((i)*IMG_WIDTH)+j+1]);
-            temp += (PSF[6] * (FLOAT)R[((i+1)*IMG_WIDTH)+j-1]);
-            temp += (PSF[7] * (FLOAT)R[((i+1)*IMG_WIDTH)+j]);
-            temp += (PSF[8] * (FLOAT)R[((i+1)*IMG_WIDTH)+j+1]);
+            outer = (R[((i-1)*IMG_WIDTH)+j-1] + R[((i-1)*IMG_WIDTH)+j] + R[((i-1)*IMG_WIDTH)+j+1] + R[((i)*IMG_WIDTH)+j-1] + R[((i)*IMG_WIDTH)+j+1] + R[((i+1)*IMG_WIDTH)+j-1] + R[((i+1)*IMG_WIDTH)+j] + R[((i+1)*IMG_WIDTH)+j+1]) * PSF[0];            
+            inner = (PSF[4] * R[((i)*IMG_WIDTH)+j]);
+            temp = inner + outer;
             if(temp<0.0) temp=0.0;
             if(temp>255.0) temp=255.0;
             convR[(i*IMG_WIDTH)+j]=(UINT8)temp;
 
             temp = 0;
-            temp += (PSF[0] * (FLOAT)G[((i-1)*IMG_WIDTH)+j-1]);
-            temp += (PSF[1] * (FLOAT)G[((i-1)*IMG_WIDTH)+j]);
-            temp += (PSF[2] * (FLOAT)G[((i-1)*IMG_WIDTH)+j+1]);
-            temp += (PSF[3] * (FLOAT)G[((i)*IMG_WIDTH)+j-1]);
-            temp += (PSF[4] * (FLOAT)G[((i)*IMG_WIDTH)+j]);
-            temp += (PSF[5] * (FLOAT)G[((i)*IMG_WIDTH)+j+1]);
-            temp += (PSF[6] * (FLOAT)G[((i+1)*IMG_WIDTH)+j-1]);
-            temp += (PSF[7] * (FLOAT)G[((i+1)*IMG_WIDTH)+j]);
-            temp += (PSF[8] * (FLOAT)G[((i+1)*IMG_WIDTH)+j+1]);
+            outer = (G[((i-1)*IMG_WIDTH)+j-1] + G[((i-1)*IMG_WIDTH)+j] + G[((i-1)*IMG_WIDTH)+j+1] + G[((i)*IMG_WIDTH)+j-1] + G[((i)*IMG_WIDTH)+j+1] + G[((i+1)*IMG_WIDTH)+j-1] + G[((i+1)*IMG_WIDTH)+j] + G[((i+1)*IMG_WIDTH)+j+1]) * PSF[0];            
+            inner = (PSF[4] * G[((i)*IMG_WIDTH)+j]);
+            temp = inner + outer;
             if(temp<0.0) temp=0.0;
             if(temp>255.0) temp=255.0;
             convG[(i*IMG_WIDTH)+j]=(UINT8)temp;
 
             temp = 0;
-            temp += (PSF[0] * (FLOAT)B[((i-1)*IMG_WIDTH)+j-1]);
-            temp += (PSF[1] * (FLOAT)B[((i-1)*IMG_WIDTH)+j]);
-            temp += (PSF[2] * (FLOAT)B[((i-1)*IMG_WIDTH)+j+1]);
-            temp += (PSF[3] * (FLOAT)B[((i)*IMG_WIDTH)+j-1]);
-            temp += (PSF[4] * (FLOAT)B[((i)*IMG_WIDTH)+j]);
-            temp += (PSF[5] * (FLOAT)B[((i)*IMG_WIDTH)+j+1]);
-            temp += (PSF[6] * (FLOAT)B[((i+1)*IMG_WIDTH)+j-1]);
-            temp += (PSF[7] * (FLOAT)B[((i+1)*IMG_WIDTH)+j]);
-            temp += (PSF[8] * (FLOAT)B[((i+1)*IMG_WIDTH)+j+1]);
+            outer = (B[((i-1)*IMG_WIDTH)+j-1] + B[((i-1)*IMG_WIDTH)+j] + B[((i-1)*IMG_WIDTH)+j+1] + B[((i)*IMG_WIDTH)+j-1] + B[((i)*IMG_WIDTH)+j+1] + B[((i+1)*IMG_WIDTH)+j-1] + B[((i+1)*IMG_WIDTH)+j] + B[((i+1)*IMG_WIDTH)+j+1]) * PSF[0];            
+            inner = (PSF[4] * B[((i)*IMG_WIDTH)+j]);
+            temp = inner + outer;
             if(temp<0.0) temp=0.0;
             if(temp>255.0) temp=255.0;
             convB[(i*IMG_WIDTH)+j]=(UINT8)temp;
