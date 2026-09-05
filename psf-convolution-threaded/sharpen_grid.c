@@ -66,7 +66,7 @@
 
 #define HEADER_SIZE (40)
 
-#define SHARPEN_GRID_ITERATIONS (900)  // Number of times threads are created to process one image
+#define SHARPEN_GRID_ITERATIONS (90)  // Number of times threads are created to process one image
 
 #define FAST_IO
 

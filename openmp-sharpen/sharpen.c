@@ -25,7 +25,7 @@
 #define HEADER_LENGTH (40)
 //#define HEADER_LENGTH (22)
 
-#define ITERATIONS (900)
+#define ITERATIONS (90)
 //#define ITERATIONS (9000)
 
 #define FAST_IO
