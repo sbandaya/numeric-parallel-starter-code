@@ -119,6 +119,8 @@ void *sharpen_thread(void *threadptr)
     int i=thargs.i;
     int j=thargs.j;
     int repeat=0;
+    FLOAT outer = 0;
+    FLOAT inner = 0;
     FLOAT temp=0;
 
     //printf("i=%d, j=%d, h=%d, w=%d, iter=%d\n", thargs.i, thargs.j, thargs.h, thargs.w, thargs.iterations);
@@ -128,43 +130,25 @@ void *sharpen_thread(void *threadptr)
         for(j=thargs.j; j<(thargs.j+thargs.w); j++)
         {
             temp=0;
-            temp += (PSF[0] * (FLOAT)R[(i-1)][j-1]);
-            temp += (PSF[1] * (FLOAT)R[(i-1)][j]);
-            temp += (PSF[2] * (FLOAT)R[(i-1)][j+1]);
-            temp += (PSF[3] * (FLOAT)R[(i)][j-1]);
-            temp += (PSF[4] * (FLOAT)R[(i)][j]);
-            temp += (PSF[5] * (FLOAT)R[(i)][j+1]);
-            temp += (PSF[6] * (FLOAT)R[(i+1)][j-1]);
-            temp += (PSF[7] * (FLOAT)R[(i+1)][j]);
-            temp += (PSF[8] * (FLOAT)R[(i+1)][j+1]);
+            outer = (R[(i-1)][j-1] + R[(i-1)][j] + R[(i-1)][j+1] + R[(i)][j-1] + R[(i)][j+1] + R[(i+1)][j-1] + R[(i+1)][j] + R[(i+1)][j+1]) * PSF[0];            
+            inner = (PSF[4] * R[(i)][j]);
+            temp = inner + outer;
 	        if(temp<0.0) temp=0.0;
             if(temp>255.0) temp=255.0;
             convR[i][j]=(UINT8)temp;
 
             temp=0;
-            temp += (PSF[0] * (FLOAT)G[(i-1)][j-1]);
-            temp += (PSF[1] * (FLOAT)G[(i-1)][j]);
-            temp += (PSF[2] * (FLOAT)G[(i-1)][j+1]);
-            temp += (PSF[3] * (FLOAT)G[(i)][j-1]);
-            temp += (PSF[4] * (FLOAT)G[(i)][j]);
-            temp += (PSF[5] * (FLOAT)G[(i)][j+1]);
-            temp += (PSF[6] * (FLOAT)G[(i+1)][j-1]);
-            temp += (PSF[7] * (FLOAT)G[(i+1)][j]);
-            temp += (PSF[8] * (FLOAT)G[(i+1)][j+1]);
+            outer = (G[(i-1)][j-1] + G[(i-1)][j] + G[(i-1)][j+1] + G[(i)][j-1] + G[(i)][j+1] + G[(i+1)][j-1] + G[(i+1)][j] + G[(i+1)][j+1]) * PSF[0];            
+            inner = (PSF[4] * G[(i)][j]);
+            temp = inner + outer;
     	    if(temp<0.0) temp=0.0;
     	    if(temp>255.0) temp=255.0;
     	    convG[i][j]=(UINT8)temp;
 
             temp=0;
-            temp += (PSF[0] * (FLOAT)B[(i-1)][j-1]);
-            temp += (PSF[1] * (FLOAT)B[(i-1)][j]);
-            temp += (PSF[2] * (FLOAT)B[(i-1)][j+1]);
-            temp += (PSF[3] * (FLOAT)B[(i)][j-1]);
-            temp += (PSF[4] * (FLOAT)B[(i)][j]);
-            temp += (PSF[5] * (FLOAT)B[(i)][j+1]);
-            temp += (PSF[6] * (FLOAT)B[(i+1)][j-1]);
-            temp += (PSF[7] * (FLOAT)B[(i+1)][j]);
-            temp += (PSF[8] * (FLOAT)B[(i+1)][j+1]);
+            outer = (B[(i-1)][j-1] + B[(i-1)][j] + B[(i-1)][j+1] + B[(i)][j-1] + B[(i)][j+1] + B[(i+1)][j-1] + B[(i+1)][j] + B[(i+1)][j+1]) * PSF[0];            
+            inner = (PSF[4] * B[(i)][j]);
+            temp = inner + outer;
     	    if(temp<0.0) temp=0.0;
     	    if(temp>255.0) temp=255.0;
     	    convB[i][j]=(UINT8)temp;
@@ -291,7 +275,6 @@ int main(int argc, char *argv[])
 
     for(runs=0; runs < SHARPEN_GRID_ITERATIONS; runs++)
     {
-
         for(thread_idx=0; thread_idx<(NUM_ROW_THREADS*NUM_COL_THREADS); thread_idx++)
         {
 
