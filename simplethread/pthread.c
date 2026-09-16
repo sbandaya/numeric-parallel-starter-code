@@ -8,6 +8,7 @@
 typedef struct
 {
     int threadIdx;
+    //added varible to calculate total sum after all threads were run 
     int threadSum;
 } threadParams_t;
 
@@ -22,11 +23,15 @@ void *counterThread(void *threadp)
 {
     int sum=0, i;
     threadParams_t *threadParams = (threadParams_t *)threadp;
-    //calculate expected value of sum 1....n
+
+    //calculate range of a thread using threadid * 100
     int n = (threadParams->threadIdx+1)*100;
+
+    //calculate expected sum of a given threads range based on sum formula 
     int expected = n*(n+1)/2;
-    //loop updated so each thread will do (thread# + 1) * 100
-    for(i=1; i <= ((threadParams->threadIdx)+1)*100; i++)
+
+    //loop updated so each thread will do sum 1....n
+    for(i=1; i <= n ; i++)
         sum=sum+i;
  
     printf("Thread idx=%d, sum[0...%d]=%d, expected value: %d\n", 
