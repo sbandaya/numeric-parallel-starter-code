@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-
 // Simple code to implement the original Eratosthenes Sieve
 //
 // Has been tested up to 1 billion using - https://primes.utm.edu/howmany.html
@@ -12,7 +10,7 @@
 //
 // definte GIANT for range to 1 billion, otherwise range is to 1 million
 //
-//#define GIANT
+#define GIANT
 
 #ifdef GIANT
 #define MAX (1000000000ULL)
