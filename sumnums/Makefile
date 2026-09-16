@@ -3,16 +3,16 @@ LIB_DIRS =
 CC=gcc
 
 CDEFS=
-CFLAGS= -O3 $(INCLUDE_DIRS) $(CDEFS)
+CFLAGS= -O3 -fopenmp $(INCLUDE_DIRS) $(CDEFS)
 LIBS= 
 
 HFILES= 
-CFILES= sumnums.c
+CFILES= sumnums.c ompsumnums.c
 
 SRCS= ${HFILES} ${CFILES}
 OBJS= ${CFILES:.c=.o}
 
-all:	sumnums
+all:	sumnums ompsumnums
 
 clean:
 	-rm -f *.o *.d
@@ -23,6 +23,9 @@ distclean:
 	-rm -f sumnums
 
 sumnums: sumnums.o
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o -lpthread
+
+ompsumnums: ompsumnums.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o -lpthread
 
 depend:
