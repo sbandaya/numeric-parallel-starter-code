@@ -26,7 +26,18 @@
 //when indexing through range we divide index by CODE_LENGTH which is 8 corresponding to one byte to find the bit position
 #define CODE_LENGTH ((sizeof(unsigned char))*8ULL)
 
-//semiprime with prime factors < 1 Billion
+
+
+
+/* TEST CASES
+1. 35: factored into 7, 5
+2. 376223: factored into 439 & 857
+3. 4006336753: factored into 46,411 & 86,323
+4. 406615978649: factored into 470,303 & 864,583
+5. 4154092115820191: factored into 47,868,193 & 86,781,887
+6. 418155269059864129: factored into 481,346,903 & 868,719,143 
+*/
+//Semiprime 
 #define SP (418155269059864129ULL)
 
 // Static declaration replaced by malloc
