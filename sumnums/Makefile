@@ -7,12 +7,12 @@ CFLAGS= -O3 -fopenmp $(INCLUDE_DIRS) $(CDEFS)
 LIBS= 
 
 HFILES= 
-CFILES= sumnums.c ompsumnums.c ompnums2.c
+CFILES= sumnums.c ompsumnums.c 
 
 SRCS= ${HFILES} ${CFILES}
 OBJS= ${CFILES:.c=.o}
 
-all:	sumnums ompsumnums ompnums2
+all:	sumnums ompsumnums 
 
 clean:
 	-rm -f *.o *.d
@@ -28,8 +28,7 @@ sumnums: sumnums.o
 ompsumnums: ompsumnums.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o -lpthread
 
-ompnums2: ompnums2.o
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o -lpthread
+
 
 depend:
 
