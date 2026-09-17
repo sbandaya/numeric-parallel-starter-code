@@ -18,7 +18,6 @@
 #define MAX (1000000ULL)
 #endif
 
-#define NUM_THREADS (8)
 #define CODE_LENGTH ((sizeof(unsigned char))*8ULL)
 
 // Static declaration replaced by malloc
@@ -104,13 +103,11 @@ int main(void)
     // 0 & 1 not prime, 2 is prime, 3 is prime, assume others prime to start
     isprime[0]=0xFC; 
 
-//#pragma omp parallel for num_threads(NUM_THREADS)
     for(i=2; i<MAX; i++) 
     {
         set_isprime(i, 1); 
     }
   
-#pragma omp parallel for num_threads(NUM_THREADS)
     for(i=0; i<MAX; i++) 
     { 
         primechk = chk_isprime(i);
@@ -129,8 +126,7 @@ int main(void)
         // 
         // simple to compose into a grid of invalidations
         //
-  
-//#pragma omp parallel for num_threads(NUM_THREADS)
+
         for(j=2*p; j<MAX+1; j+=p)
         {
             //printf("j=%llu\n", j);
@@ -149,7 +145,6 @@ int main(void)
 
     }
 
-#pragma omp parallel for num_threads(NUM_THREADS) reduction(+:cnt)
     for(i=0; i<MAX+1; i++)
     {
         if(chk_isprime(i))

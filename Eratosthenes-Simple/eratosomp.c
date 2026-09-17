@@ -13,12 +13,12 @@
 //
 // define GIANT for test up to 4 billion, else will do range to 1 million
 //
-#define GIANT
+//#define GIANT
 
 #ifdef GIANT
 #define MAX (4000000000ULL) // limit is 4 billion based on 32-bit primes, 64-bit SP
 #else
-#define MAX (1000000ULL)
+#define MAX (1000000000ULL)
 #endif
 
 #define CODE_LENGTH ((sizeof(unsigned char))*8ULL)
