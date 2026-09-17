@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <omp.h>
 
-#define COUNT (6000000000ULL)
+#define COUNT (1000000000ULL)
 #define NUM_THREADS (10)
 //printf("Thread %d summing range %d to %d\n", idx, start, end);
 //printf("thread idx=%d, gsum=%lld\n", idx, gsum[idx]);

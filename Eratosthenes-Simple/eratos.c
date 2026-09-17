@@ -73,7 +73,6 @@ int set_isprime(unsigned long long int i, unsigned char val)
     }
     else
     {
-        #pragma omp atomic update
         isprime[idx] = isprime[idx] & (~(1<<bitpos));
     }
 

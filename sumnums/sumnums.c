@@ -4,7 +4,7 @@
 #include <time.h>
 
 #define COUNT (6000000000ULL)
-#define NUM_THREADS (10)
+#define NUM_THREADS (4)
 
 typedef struct
 {
