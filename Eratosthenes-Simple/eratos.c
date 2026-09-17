@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <omp.h>
+#include <time.h>
 // Simple code to implement the original Eratosthenes Sieve
 //
 // Has been tested up to 1 billion using - https://primes.utm.edu/howmany.html
@@ -21,12 +22,20 @@
 #endif
 
 
-#define NUM_THREADS (8)
+#define NUM_THREADS (1)
 //using bitmaps mean that each number corresponds to one bit instead of an int
 //when indexing through range we divide index by CODE_LENGTH which is 8 corresponding to one byte to find the bit position
 #define CODE_LENGTH ((sizeof(unsigned char))*8ULL)
 
-//semiprime with prime factors < 1 Billion
+/* TEST CASES
+1. 35: factored into 7, 5
+2. 376223: factored into 439 & 857
+3. 4006336753: factored into 46,411 & 86,323
+4. 406615978649: factored into 470,303 & 864,583
+5. 4154092115820191: factored into 47,868,193 & 86,781,887
+6. 418155269059864129: factored into 481,346,903 & 868,719,143 
+*/
+//Semiprime 
 #define SP (418155269059864129ULL)
 
 // Static declaration replaced by malloc
@@ -95,6 +104,16 @@ int main(void)
     unsigned int cnt=0;
     unsigned long long int thread_idx=0;
 	int idx=0, ridx=0, primechk;
+    //find the prime factors of a given Semi prime SP = p1 * p2
+    unsigned long long p1 = 0;
+    unsigned long long p2 = 0;
+    //factors are < square root of semi prime 
+    unsigned long long SP_range = (unsigned long long)sqrt(SP);
+    //flag for searching factors termination
+    int found = 0;
+    //Give each thread a range of bits to prevent race conditions when parallelizing 
+    unsigned long long total_bytes = MAX/CODE_LENGTH+1;
+    unsigned long long range = (total_bytes + NUM_THREADS - 1) / NUM_THREADS;
 
     printf("max uint = %u\n", (0xFFFFFFFF));
     printf("max long long = %llu\n", (0xFFFFFFFFFFFFFFFFULL));
@@ -115,6 +134,14 @@ int main(void)
     // 0 & 1 not prime, 2 is prime, 3 is prime, assume others prime to start
     isprime[0]=0xFC; 
 
+   double fstart, fnow;
+   struct timespec start, now;
+   clock_gettime(CLOCK_MONOTONIC, &start);
+   fstart = (double)start.tv_sec  + (double)start.tv_nsec / 1000000000.0;
+
+   clock_gettime(CLOCK_MONOTONIC, &now);
+   fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+   printf("\nstart test at %lf\n", fnow-fstart);
 //sets all numbers from 2 to max to be assumed prime 
 //pragma is fine as all bits are being set to 1 so clashes are fine 
 #pragma omp parallel for num_threads(NUM_THREADS)
@@ -131,22 +158,17 @@ Checks if prime initialization worked correctly
     for(i=0; i<MAX; i++) 
     { 
         primechk = chk_isprime(i);
-        //printf("isprime=%d\n", primechk); 
+        printf("isprime=%d\n", primechk); 
     }
 
     // will all be TRUE here or 0xFF
-    //print_isprime();
+    print_isprime();
 */
 
     //goes through each prime number and eliminates it multiples  
     //only need to sieve using prime numbers up to the sqrt of max
-
     while( (p*p) <=  MAX)
     {
-        //Give each thread a range of bits to prevent race conditions when parallelizing 
-        unsigned long long total_bytes = MAX/CODE_LENGTH+1;
-        unsigned long long range = (total_bytes + NUM_THREADS - 1) / NUM_THREADS;
-
         #pragma omp parallel num_threads(NUM_THREADS) 
         {
             //calculated exact start and end point for each thread based on thread id 
@@ -198,22 +220,6 @@ Checks if prime initialization worked correctly
             //printf("i=%llu\n", i); 
         }
     }
-    printf("\nNumber of primes [0..%llu]=%u\n\n", MAX, cnt);
-    //print the first prime found in range while iterating backwards
-    for (unsigned long long i = MAX; i >= 2; i--)
-    {
-        if (chk_isprime(i))
-        {
-            printf("largest prime: %llu\n",i);
-            break;
-        }
-    }
-    //find the prime factors of a given Semi prime SP = p1 * p2
-    unsigned long long p1 = 0;
-    unsigned long long p2 = 0;
-    //factors are < square root of semi prime 
-    unsigned long long SP_range = (unsigned long long)sqrt(SP);
-    int found = 0;
 
 #pragma omp parallel for num_threads(NUM_THREADS) shared(found,p1,p2)
     for(i = 2; i<SP_range; i++)
@@ -235,6 +241,21 @@ Checks if prime initialization worked correctly
             }
         }
     }
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+    printf("stop test at %lf\n", fnow-fstart);
+
+    printf("\nNumber of primes [0..%llu]=%u\n\n", MAX, cnt);
+    //print the first prime found in range while iterating backwards
+    for (unsigned long long i = MAX; i >= 2; i--)
+    {
+        if (chk_isprime(i))
+        {
+            printf("largest prime: %llu\n",i);
+            break;
+        }
+    }
+
     if(found)
     {
         printf("%llu: factored into %llu, %llu\n",SP,p1,p2);
