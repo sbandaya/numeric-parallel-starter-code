@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 // Simple code to implement the original Eratosthenes Sieve
 //
 // Has been tested up to 1 billion using - https://primes.utm.edu/howmany.html
@@ -80,6 +81,7 @@ void print_isprime(void)
     printf("\n");
 
 }
+
 
 
 int main(void)
@@ -189,9 +191,44 @@ Checks if prime initialization worked correctly
             //printf("i=%llu\n", i); 
         }
     }
-
     printf("\nNumber of primes [0..%llu]=%u\n\n", MAX, cnt);
+    //print the first prime found in range while iterating backwards
+    for (unsigned long long i = MAX; i >= 2; i--)
+    {
+        if (chk_isprime(i))
+        {
+            printf("largest prime: %llu\n",i);
+        }
+    }
+    //find the prime factors of a given Semi prime SP = p1 * p2
+    unsigned long long SP;
+    unsigned long long p1;
+    unsigned long long p2;
+    //factors are < square root of semi prime 
+    unsigned long long SP_range = sqrt(SP)
+    int found = 0;
 
-    return (i);
+#pragma omp parallel for num_threads(NUM_THREADS) shared(found,p1,p2)
+    for(i = 0; i<SP_range; i++)
+    {
+        //if factor is found skip work
+        if(found) continue;
+
+        //if i is both prime and has no remainder when dividing the semi prime 
+        if(chk_isprime(i) && SP%i == 0)
+        {
+            //in case two threads find factors at same time prevent from accessing twice
+            #pragma omp critical
+            {
+                //set flag
+                found = 1;
+                //current i is p1 and p2 is the number when you divide semiprime with other factor
+                p1 = i;
+                p2 = SP/p1;
+            }
+        }
+    }
+    printf("%llu: factored into %llu, %llu\n",SP,p1,p2);
+    return 0;
 }
 
