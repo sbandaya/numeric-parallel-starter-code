@@ -18,7 +18,10 @@
 #define MAX (1000000ULL)
 #endif
 
+
 #define NUM_THREADS (8)
+//using bitmaps mean that each number corresponds to one bit instead of an int
+//when indexing through range we divide index by CODE_LENGTH which is 8 corresponding to one byte to find the bit position
 #define CODE_LENGTH ((sizeof(unsigned char))*8ULL)
 
 // Static declaration replaced by malloc
@@ -51,10 +54,12 @@ int set_isprime(unsigned long long int i, unsigned char val)
 
     if(val > 0)
     {
+        //marks value at idx as prime by using bitwise or to change bit to a 1 
         isprime[idx] = isprime[idx] | (1<<bitpos);
     }
     else
     {
+        #pragma omp atomic update
         isprime[idx] = isprime[idx] & (~(1<<bitpos));
     }
 
@@ -104,12 +109,18 @@ int main(void)
     // 0 & 1 not prime, 2 is prime, 3 is prime, assume others prime to start
     isprime[0]=0xFC; 
 
-//#pragma omp parallel for num_threads(NUM_THREADS)
+//sets all numbers from 2 to max to be assumed prime 
+//pragma is fine as all bits are being set to 1 so clashes are fine 
+#pragma omp parallel for num_threads(NUM_THREADS)
     for(i=2; i<MAX; i++) 
     {
         set_isprime(i, 1); 
     }
   
+
+
+/*
+Checks if prime initialization worked correctly 
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(i=0; i<MAX; i++) 
     { 
@@ -119,22 +130,41 @@ int main(void)
 
     // will all be TRUE here or 0xFF
     //print_isprime();
+*/
 
+    //goes through each prime number and eliminates it multiples  
+    //only need to sieve using prime numbers up to the sqrt of max
 
     while( (p*p) <=  MAX)
     {
-        //printf("p=%llu\n", p);
+        //Give each thread a range of bits to prevent race conditions 
+        unsigned long long total_bytes = MAX/CODE_LENGTH+1;
+        unsigned long long range = total_bytes / NUM_THREADS; 
 
-        // invalidate all multiples of lowest prime so far
-        // 
-        // simple to compose into a grid of invalidations
-        //
-  
-//#pragma omp parallel for num_threads(NUM_THREADS)
-        for(j=2*p; j<MAX+1; j+=p)
+        #pragma omp num_threads(NUM_THREADS) 
         {
-            //printf("j=%llu\n", j);
-            set_isprime(j,0);
+            //calculated exact start and end point for each thread based on thread id 
+            unsigned int Threadidx = omp_get_thread_num(); 
+            unsigned long long bit_start = Threadidxidx * range;
+            unsigned long long bit_end = bit_start + range;
+
+            //prevents last thread from going out of range
+            if(bit_end > total_bytes)
+            {
+                bit_end = total_bytes;
+            }
+
+            //convert bits to byte position in isprime[]
+            unsigned long long byte_start = bit_start * CODE_LENGTH;
+            unsigned long long byte_end = bit_end * CODE_LENGTH -1;
+
+            unsigned long long first_multiple = 
+
+            //set all multiples of p in thread range to non prime 
+            for (unsigned long long j = first; j <= byte_end; j += p)
+            {
+                set_isprime(j,0);
+            }
         }
 
         // find next lowest prime - sequential process
@@ -149,6 +179,7 @@ int main(void)
 
     }
 
+//sums total number of primes after all non-primes have been 
 #pragma omp parallel for num_threads(NUM_THREADS) reduction(+:cnt)
     for(i=0; i<MAX+1; i++)
     {
