@@ -22,7 +22,7 @@
 #endif
 
 
-#define NUM_THREADS (1)
+#define NUM_THREADS (4)
 //using bitmaps mean that each number corresponds to one bit instead of an int
 //when indexing through range we divide index by CODE_LENGTH which is 8 corresponding to one byte to find the bit position
 #define CODE_LENGTH ((sizeof(unsigned char))*8ULL)
@@ -110,9 +110,7 @@ int main(void)
     unsigned long long SP_range = (unsigned long long)sqrt(SP);
     //flag for searching factors termination
     int found = 0;
-    //Give each thread a range of bits to prevent race conditions when parallelizing 
-    unsigned long long total_bytes = MAX/CODE_LENGTH+1;
-    unsigned long long range = (total_bytes + NUM_THREADS - 1) / NUM_THREADS;
+
 
     printf("max uint = %u\n", (0xFFFFFFFF));
     printf("max long long = %llu\n", (0xFFFFFFFFFFFFFFFFULL));
@@ -164,34 +162,38 @@ Checks if prime initialization worked correctly
     print_isprime();
 */
 
+    //Give each thread a range of bits to prevent race conditions when parallelizing 
+    unsigned long long total_bytes = MAX/CODE_LENGTH+1;
+    unsigned long long range = (total_bytes + NUM_THREADS - 1) / NUM_THREADS;
     //goes through each prime number and eliminates it multiples  
     //only need to sieve using prime numbers up to the sqrt of max
     while( (p*p) <=  MAX)
     {
         #pragma omp parallel num_threads(NUM_THREADS) 
         {
-            //calculated exact start and end point for each thread based on thread id 
+            //calculated exact start and end point in array for each thread based on thread id 
             unsigned int ThreadIdx = omp_get_thread_num(); 
-            unsigned long long bit_start = ThreadIdx * range;
-            unsigned long long bit_end = bit_start + range;
+            unsigned long long start_idx = ThreadIdx * range;
+            unsigned long long end_idx = start_idx + range;
 
             //prevents last thread from going out of range
-            if(bit_end > total_bytes)
+            if(end_idx > total_bytes)
             {
-                bit_end = total_bytes;
+                end_idx = total_bytes;
             }
 
-            //convert bits to byte position in isprime[]
-            unsigned long long byte_start = bit_start * CODE_LENGTH;
-            unsigned long long byte_end = bit_end * CODE_LENGTH -1;
+            //convert index to individual numbers 
+            unsigned long long start_num = start_idx * CODE_LENGTH;
+            unsigned long long end_num = end_idx * CODE_LENGTH -1;
 
-            unsigned long long first_multiple = ((byte_start + p - 1) / p) * p;
+            unsigned long long first_multiple = ((start_num + p - 1) / p) * p;
             if (first_multiple < p*p)
             {
                 first_multiple = p*p;
             }
+
             //set all multiples of p in thread range to non prime starting at p*p to avoid multiples checked by lower primes 
-            for (unsigned long long j = first_multiple; j <= byte_end; j += p)
+            for (unsigned long long j = first_multiple; j <= end_num; j += p)
             {
                 set_isprime(j,0);
             }
