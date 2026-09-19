@@ -6,7 +6,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <dirent.h>
-
+#include <omp.h>
+#include <time.h>
 // This is the dimension of a playing card with a 3:4 Aspect Ratio (standing upright)
 #define DIMX (690)
 #define DIMY (920)
@@ -14,16 +15,12 @@
 //picks the largest length/height between x an y to make matrix size
 #define max(X, Y) ((X) > (Y) ? (X) : (Y))
 #define SQDIM (max(DIMX, DIMY))
-
+#define NUM_THREADS (4)
 //updated to a three-dimensional array so mulitple threads can be processed simultaneously 
 unsigned char P[NUM_CARDS][SQDIM][SQDIM];     // Pixel array of gray values
 unsigned char TP[NUM_CARDS][SQDIM][SQDIM];    // Transpose of Pixel array
-unsigned char RRP[NUM_CARDS][SQDIM][SQDIM];   // Rotation Right of Pixel array
-unsigned char RLP[NUM_CARDS][SQDIM][SQDIM];   // Rotation Left of Pixel array
-char headers[NUM_CARDS][80];
-char suits[NUM_CARDS]
-//matrix initialization
-void zeroPixMat(unsigned char Mat[][SQDIM]);
+unsigned char RP[NUM_CARDS][SQDIM][SQDIM];    // Rotation 
+char suits[NUM_CARDS];
 //transpose equation
 void transposePixMat(unsigned char Mat[][SQDIM], unsigned char TMat[][SQDIM]);
 //turn right
@@ -38,74 +35,101 @@ void writePGMFastSquare(int fdout, char *header, unsigned char Mat[][SQDIM]);
 
 int main(int argc, char *argv[])
 {
-    int fdin, fdout, rowIdx, colIdx;
-    //int bytesRead, bytesLeft, bytesWritten;
-    char header[80];
-    char inputPath[1024];
-    char outputPath[1024];
+    int fdin, fdout, rowIdx, colIdx, card = 0;
+    char header[NUM_CARDS][80]; //card header for each card 
+    char inputPath[NUM_CARDS][1024]; //holds the file location for each card
+    char outputPath[NUM_CARDS][1024]; //holds the file output for each card
+    double fstart, fnow;
+    struct timespec start, now;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    fstart = (double)start.tv_sec  + (double)start.tv_nsec / 1000000000.0;
+
     //modified example of dirlist.c 
     struct dirent *dp;
     char *fullpath;
-    const char *input_folder="./cards_3x4_pgm"; // Directory target on NFS volume
-    const char *output_folder="./rotated_pgm"; // Directory target on NFS volume
-    DIR *dir = opendir(input_folder); // Open the directory - dir contains a pointer to manage the dir
+    const char *input_folder="./cards_3x4_pgm"; //directory holding original cards
+    const char *output_folder="./rotated_pgm"; //directory holding rotated cards
+    
+    DIR *dir = opendir(input_folder); 
     if (dir == NULL) {
         perror(input_folder);
         return 1;
     }
-    printf("\nUse of readdir to find all card file names in a directory\n");
+    
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+    printf("\nstart test at %lf\n", fnow-fstart);
 
-    while (dp=readdir(dir)) // if dp is null, there's no more content to read
+    //sequentially find all input and output file paths
+    while ((dp = readdir(dir)) != NULL)
     {
-        if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) continue;
 
-        snprintf(inputPath, sizeof(inputPath),"%s/%s", input_folder, dp->d_name);
-        snprintf(outputPath, sizeof(outputPath),"%s/%s", output_folder, dp->d_name);
+        size_t len = strlen(dp->d_name);
+        
+        //skip non pgm files 
+        if (strcmp(dp->d_name + len - 4, ".pgm") != 0)
+            continue;
 
-        fdin = open(inputPath, O_RDONLY);
-        if (fdin < 0) {
-            perror(inputPath);
-            exit(1);
-        }
+        //add the current files name/path to the array 
+        snprintf(inputPath[card], sizeof(inputPath[card]),"%s/%s", input_folder, dp->d_name);
+        snprintf(outputPath[card], sizeof(outputPath[card]),"%s/%s", output_folder, dp->d_name);
 
-        fdout = open(outputPath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (fdout < 0) {
-            perror(outputPath);
-            exit(1);
-        }
+        //char before .pgm
+        suits[card] = dp->d_name[len - 5];
+        card++;
+    }
+    closedir(dir);
 
-        // initialize Pixel array with all zeros
-        zeroPixMat(P);
 
-        // read in the PGM data here
-        readPGMHeaderSimple(fdin, header);
-        readPGMDataFast(fdin, P);
-        //get the character preceeding the .pgm which denotes the suit
-        char suit = dp->d_name[strlen(dp->d_name) - 5];
+
+//give each thread a range of cards to read into matrix P
+#pragma omp parallel for num_threads(NUM_THREADS) 
+    for (int card = 0; card < NUM_CARDS; card++)
+    {
+        int fdin = open(inputPath[card], O_RDONLY);
+
+        readPGMHeaderSimple(fdin, header[card]);
+        readPGMDataFast(fdin, P[card]);
         close(fdin);
 
-        //transpose current matrix
-        transposePixMat(P,TP);
-        // Update header to be square 920x920
-        header[26]='9'; header[27]='2'; header[28]='0';
-        //club or spade rotate right
-        if(suit == 'C' || suit == 'S')
-        {
-            swapColPixMat(TP,RRP,SQDIM);
-            writePGMFastSquare(fdout, header, RRP);
-        }
-        //heart or diamond rotate left
-        else if (suit == 'H' || suit == 'D')
-        {
-            swapRowPixMat(TP,RLP,SQDIM);
-            writePGMFastSquare(fdout, header, RLP);
-        }
-        close(fdout);
-
+        //update the pgm header dimensions to 920x920
+        header[card][26]='9'; header[card][27]='2'; header[card][28]='0';
     }
 
-    closedir(dir); // close the handle (pointer)
+
+
+//give each thread a range of cards to perform rotations
+#pragma omp parallel for num_threads(NUM_THREADS)
+    for (int card = 0; card < NUM_CARDS; card++)
+    {
+        transposePixMat(P[card], TP[card]);
+
+        //if cards are clubs or spades rotate right
+        if (suits[card] == 'C' || suits[card] == 'S')
+        {
+            swapColPixMat(TP[card], RP[card], SQDIM);
+        }
+
+        //if cards are hearts or diamonds rate left
+        if(suits[card] == 'H' || suits[card] == 'D')
+        {
+            swapRowPixMat(TP[card], RP[card], SQDIM);
+        }
+    }
+
+//give each thread a range of cards to ouput rotated data
+#pragma omp parallel for num_threads(NUM_THREADS)
+    for (int card = 0; card < NUM_CARDS; card++)
+    {
+        int fdout = open(outputPath[card],O_WRONLY | O_CREAT | O_TRUNC,0644);
+        writePGMFastSquare(fdout, header[card], RP[card]);
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+    printf("stop test at %lf\n", fnow-fstart);
     printf("Read and then write of unmodified or test PGM done\n");
+
 }
 
 
@@ -206,7 +230,7 @@ void readPGMDataFast(int fdin, unsigned char Mat[][SQDIM])
     // read in whole rows at a time to speed up
     for(rowIdx = 0; rowIdx < DIMY; rowIdx++)
     {
-        bytesRead=read(fdin, (void *)&P[rowIdx][0], DIMX);
+        bytesRead = read(fdin, &Mat[rowIdx][0], DIMX);
     }
 
 }
