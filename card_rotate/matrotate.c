@@ -4,159 +4,237 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+#include <dirent.h>
 
-#define HEADER_SIZE 
-#define DIMX (920)
+// This is the dimension of a playing card with a 3:4 Aspect Ratio (standing upright)
+#define DIMX (690)
 #define DIMY (920)
-
+#define NUM_CARDS (52)
+//picks the largest length/height between x an y to make matrix size
 #define max(X, Y) ((X) > (Y) ? (X) : (Y))
+#define SQDIM (max(DIMX, DIMY))
 
-unsigned int P[max(DIMX, DIMY)][max(DIMX, DIMY)];
-unsigned int TP[max(DIMX, DIMY)][max(DIMX, DIMY)];
-unsigned int RRP[max(DIMX, DIMY)][max(DIMX, DIMY)];
-unsigned int RLP[max(DIMX, DIMY)][max(DIMX, DIMY)];
+//updated to a three-dimensional array so mulitple threads can be processed simultaneously 
+unsigned char P[NUM_CARDS][SQDIM][SQDIM];     // Pixel array of gray values
+unsigned char TP[NUM_CARDS][SQDIM][SQDIM];    // Transpose of Pixel array
+unsigned char RRP[NUM_CARDS][SQDIM][SQDIM];   // Rotation Right of Pixel array
+unsigned char RLP[NUM_CARDS][SQDIM][SQDIM];   // Rotation Left of Pixel array
+char headers[NUM_CARDS][80];
+char suits[NUM_CARDS]
+//matrix initialization
+void zeroPixMat(unsigned char Mat[][SQDIM]);
+//transpose equation
+void transposePixMat(unsigned char Mat[][SQDIM], unsigned char TMat[][SQDIM]);
+//turn right
+void swapColPixMat(unsigned char Mat[][SQDIM], unsigned char TMat[][SQDIM], int square_size);
+//turn left
+void swapRowPixMat(unsigned char Mat[][SQDIM], unsigned char TMat[][SQDIM], int square_size);
 
-void zeroIntMat(unsigned int Mat[][max(DIMX, DIMY)]);
-void fillIntMat(unsigned int Mat[][max(DIMX, DIMY)]);
-void printIntMat(unsigned int Mat[][max(DIMX, DIMY)]);
-
-void transposeIntMat(unsigned int Mat[][max(DIMX, DIMY)], unsigned int TMat[][max(DIMX, DIMY)]);
-void swapColIntMat(unsigned int Mat[][max(DIMX, DIMY)], unsigned int TMat[][max(DIMX, DIMY)]);
-void swapRowIntMat(unsigned int Mat[][max(DIMX, DIMY)], unsigned int TMat[][max(DIMX, DIMY)]);
-
+// PGM file utilities with simple byte by byte I/O
+void readPGMHeaderSimple(int fdin, char *header);
+void readPGMDataFast(int fdin, unsigned char Mat[][SQDIM]);
+void writePGMFastSquare(int fdout, char *header, unsigned char Mat[][SQDIM]);
 
 int main(int argc, char *argv[])
 {
-    int fdin, fdout, bytesLeft, bytes Written = 0, bytesRead = 0;
-    FLOAT temp, fstart, fnow;
-    struct timespec start, now;
+    int fdin, fdout, rowIdx, colIdx;
+    //int bytesRead, bytesLeft, bytesWritten;
+    char header[80];
+    char inputPath[1024];
+    char outputPath[1024];
+    //modified example of dirlist.c 
+    struct dirent *dp;
+    char *fullpath;
+    const char *input_folder="./cards_3x4_pgm"; // Directory target on NFS volume
+    const char *output_folder="./rotated_pgm"; // Directory target on NFS volume
+    DIR *dir = opendir(input_folder); // Open the directory - dir contains a pointer to manage the dir
+    if (dir == NULL) {
+        perror(input_folder);
+        return 1;
+    }
+    printf("\nUse of readdir to find all card file names in a directory\n");
 
-    if(argc < 3)
+    while (dp=readdir(dir)) // if dp is null, there's no more content to read
     {
-        printf("Example Use: matrotate <inputfile> <outputfile>\n");
+        if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) continue;
+
+        snprintf(inputPath, sizeof(inputPath),"%s/%s", input_folder, dp->d_name);
+        snprintf(outputPath, sizeof(outputPath),"%s/%s", output_folder, dp->d_name);
+
+        fdin = open(inputPath, O_RDONLY);
+        if (fdin < 0) {
+            perror(inputPath);
+            exit(1);
+        }
+
+        fdout = open(outputPath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fdout < 0) {
+            perror(outputPath);
+            exit(1);
+        }
+
+        // initialize Pixel array with all zeros
+        zeroPixMat(P);
+
+        // read in the PGM data here
+        readPGMHeaderSimple(fdin, header);
+        readPGMDataFast(fdin, P);
+        //get the character preceeding the .pgm which denotes the suit
+        char suit = dp->d_name[strlen(dp->d_name) - 5];
+        close(fdin);
+
+        //transpose current matrix
+        transposePixMat(P,TP);
+        // Update header to be square 920x920
+        header[26]='9'; header[27]='2'; header[28]='0';
+        //club or spade rotate right
+        if(suit == 'C' || suit == 'S')
+        {
+            swapColPixMat(TP,RRP,SQDIM);
+            writePGMFastSquare(fdout, header, RRP);
+        }
+        //heart or diamond rotate left
+        else if (suit == 'H' || suit == 'D')
+        {
+            swapRowPixMat(TP,RLP,SQDIM);
+            writePGMFastSquare(fdout, header, RLP);
+        }
+        close(fdout);
+
     }
 
-    else
-    {
-         // open binary file to read in data instead of using test pattern data
-         if((fdin = open(argv[1], O_RDONLY, 0644)) < 0)
-         {
-            printf("Error opening %s\n", argv[1]);
-         }
-
-         // open binary file to write out data
-         if((fdout = open(argv[2], O_WRONLY, 0644)) < 0)
-         {
-             printf("Error opening %s\n", argv[2]);
-         }
-    }
-
-    // read in the PGM data here
-
-    // if the PGM is for a club or spade, note that it must be rotated RIGHT
-    // if the PGM is for a heart or diamond,  note that it must be rotated LEFT
-
-    close(fdin);
-
-
-    // initialize array with test data
-    fillIntMat(P);
-
-    printf("Matrix P=");printIntMat(P);
-
-    transposeIntMat(P, TP);
-    //printf("Transpose (rotation about left-to-right diagonal) of P=");printIntMat(TP);
-    printf("Transpose of P=");printIntMat(TP);
-
-    swapColIntMat(TP, RRP);
-    swapRowIntMat(TP, RLP);
-
-    printf("P=");printIntMat(P);
-    //printf("Rotate Right (column rotate after TP), P=");printIntMat(RRP);
-    printf("Rotate Right P=");printIntMat(RRP);
-    //printf("Rotate Left (rown rotate after TP), P=");printIntMat(RLP);
-    printf("Rotate Left P=");printIntMat(RLP);
-
-
-    // write out the modified PGM data here
-
-    close(fdout);
+    closedir(dir); // close the handle (pointer)
+    printf("Read and then write of unmodified or test PGM done\n");
 }
 
 
-void swapRowIntMat(unsigned int Mat[][max(DIMX, DIMY)], unsigned int TMat[][max(DIMX, DIMY)])
+void swapRowPixMat(unsigned char Mat[][SQDIM], unsigned char TMat[][SQDIM], int square_size)
 {
     int idx, jdx;
 
-    for(idx=0; idx<max(DIMX, DIMY); idx++)       
-        for(jdx=0; jdx<max(DIMX, DIMY); jdx++)  
+    for(idx=0; idx<square_size; idx++)       
+        for(jdx=0; jdx<square_size; jdx++)  
         {
             // copy into TMat and swap row values         
-            TMat[idx][jdx]=Mat[max(DIMX, DIMY)-1-idx][jdx];
+            TMat[idx][jdx]=Mat[square_size-1-idx][jdx];
         }
 }
 
 
-void swapColIntMat(unsigned int Mat[][max(DIMX, DIMY)], unsigned int TMat[][max(DIMX, DIMY)])
+void swapColPixMat(unsigned char Mat[][SQDIM], unsigned char TMat[][SQDIM], int square_size)
 {
     int idx, jdx;
 
-    for(idx=0; idx<max(DIMX, DIMY); idx++)       
-        for(jdx=0; jdx<max(DIMX, DIMY); jdx++)  
+    for(idx=0; idx<square_size; idx++)       
+        for(jdx=0; jdx<square_size; jdx++)  
         {
             // copy into TMat and swap column values         
-            TMat[idx][jdx]=Mat[idx][max(DIMX, DIMY)-1-jdx];
+            TMat[idx][jdx]=Mat[idx][square_size-1-jdx];
         }
 }
 
 
-void fillIntMat(unsigned int Mat[][max(DIMX, DIMY)])
-{
-    int cnt=0, idx, jdx;
-
-    for(idx=0; idx<max(DIMX, DIMY); idx++)       
-        for(jdx=0; jdx<max(DIMX, DIMY); jdx++)
-        {
-            Mat[idx][jdx]=(unsigned int)cnt;
-            cnt++;
-        }
-}
-
-
-void zeroIntMat(unsigned int Mat[][max(DIMX, DIMY)])
+void zeroPixMat(unsigned char Mat[][SQDIM])
 {
     int idx, jdx;
 
-    for(idx=0; idx<max(DIMX, DIMY); idx++)       
-        for(jdx=0; jdx<max(DIMX, DIMY); jdx++)
+    for(idx=0; idx<SQDIM; idx++)       
+        for(jdx=0; jdx<SQDIM; jdx++)
         {
             Mat[idx][jdx]=0;
         }
 }
 
-
-void transposeIntMat(unsigned int Mat[][max(DIMX, DIMY)], unsigned int TMat[][max(DIMX, DIMY)])
+void transposePixMat(unsigned char Mat[][SQDIM], unsigned char TMat[][SQDIM])
 {
     int idx, jdx;
 
-    for(idx=0; idx<max(DIMX, DIMY); idx++)
-        for(jdx=0; jdx<max(DIMX, DIMY); jdx++)
+    for(idx=0; idx<SQDIM; idx++)
+        for(jdx=0; jdx<SQDIM; jdx++)
         {
             // transpose row as column
             TMat[jdx][idx]=Mat[idx][jdx];
         }
 }
 
-
-void printIntMat(unsigned int Mat[][max(DIMX, DIMY)])
+void printPixMat(unsigned char Mat[][SQDIM], int square_size)
 {
     int idx, jdx;
 
-    for(idx=0; idx<max(DIMX, DIMY); idx++)
+    for(idx=0; idx<square_size; idx++)
     {
          printf("\n");
-         for(jdx=0; jdx<max(DIMX, DIMY); jdx++)
-             printf("%02d ", Mat[idx][jdx]);
+         for(jdx=0; jdx<square_size; jdx++)
+             printf("%03d ", Mat[idx][jdx]);
     }
     printf("\n\n");;
 }
+
+void readPGMHeaderSimple(int fdin, char *header)
+{
+    int bytesRead, bytesLeft, bytesWritten;
+
+    //printf("Reading PGM header here\n");
+
+    // header on each card is 38 bytes
+    bytesLeft=38;
+    bytesRead=read(fdin, (void *)header, bytesLeft);
+
+    if(bytesRead < bytesLeft)
+        exit(-1);
+    /*
+    else
+    {
+        header[bytesRead] = '\0';
+        printf("header=%s\n", header);
+    }
+
+    */
+}
+
+void readPGMDataFast(int fdin, unsigned char Mat[][SQDIM])
+{
+    int bytesRead, bytesLeft, bytesWritten;
+    int rowIdx, colIdx;
+
+    //printf("Reading PGM data here\n");
+
+    // now read in all of the data
+    bytesRead=0;
+
+    // read in whole rows at a time to speed up
+    for(rowIdx = 0; rowIdx < DIMY; rowIdx++)
+    {
+        bytesRead=read(fdin, (void *)&P[rowIdx][0], DIMX);
+    }
+
+}
+
+void writePGMFastSquare(int fdout, char *header, unsigned char Mat[][SQDIM])
+{
+    int bytesRead, bytesLeft, bytesWritten;
+    int rowIdx, colIdx;
+
+    //printf("Would write out a header and data here\n");
+    bytesLeft=38;
+
+    bytesWritten=write(fdout, (void *)header, bytesLeft);
+    
+    //printf("wrote %d bytes for header\n", bytesWritten);
+
+    // now write out all of the data
+    bytesWritten=0;
+
+    for(rowIdx = 0; rowIdx < SQDIM; rowIdx++)
+    {
+        bytesWritten=write(fdout, (void *)&Mat[rowIdx][0], SQDIM);
+        if(bytesWritten < SQDIM)
+        {
+            printf("ERROR in write\n"); exit(-1);
+        }
+    }
+}
+
+
+
