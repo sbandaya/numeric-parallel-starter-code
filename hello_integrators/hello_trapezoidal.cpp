@@ -4,11 +4,11 @@
 //
 #include <iostream>
 #include <cmath>
-
+#include <mpi.h>
 //#define RANGE (M_PI)
-#define RANGE (10) //f(x) = 10
+#define RANGE (100000) //f(x) = 10
 #define STEPS (100000000) // updated step count for higher precision 
-
+#define DX (0.001)
 using namespace std;
 
 int thread_count=1;
@@ -34,25 +34,35 @@ double trapezoidal_rule(double a, double b, int n)
 
 int main(int argc, char* argv[]) 
 {
+    int my_rank, comm_sz;
+    //MPI initialization 
+    MPI_Init(NULL,NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
     const double a = 0.0;
     const double b = RANGE;
-    const int n = STEPS;
+    const int n = (b-a)/DX; // total steps = stop - start / step size
 
-    if(argc == 2)
+    int local_n = n / comm_sz; // # of steps for each process
+
+    //starting and stop points for each process
+    double local_a = my_rank * local_n * DX;
+    double local_b = local_a + local_n * DX;
+
+    double local_integation = trapezoidal_rule(local_a, local_b, local_n);
+
+    double total_integration = 0;
+
+    MPI_Reduce(&local_integation,&total_integration,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+
+    if(my_rank == 0)
     {
-        sscanf(argv[1], "%d", &thread_count);
-        printf("Will run with: thread_count=%d\n", thread_count);
-    }
-    else
-    {
-        printf("Will run with default: thread_count=%d\n", thread_count);
+        cout.precision(15);
+        cout << "The integral of f(x) from 0.0 to " << b << " with " << n << " steps is " << total_integration << endl;
     }
 
-    const double result = trapezoidal_rule(a, b, n);
-
-    cout.precision(15);
-    cout << "The integral of f(x) from 0.0 to " << b << " with " << n << " steps is " << result << endl;
-
+    MPI_Finalize();
     return 0;
 }
 
