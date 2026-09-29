@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath>
 #include <mpi.h>
+#include <time.h>
 //#define RANGE (M_PI)
 #define RANGE (100000) //f(x) = 10
 #define STEPS (100000000) // updated step count for higher precision 
@@ -34,6 +35,7 @@ double trapezoidal_rule(double a, double b, int n)
 
 int main(int argc, char* argv[]) 
 {
+
     int my_rank, comm_sz;
     //MPI initialization 
     MPI_Init(NULL,NULL);
@@ -49,6 +51,16 @@ int main(int argc, char* argv[])
     //starting and stop points for each process
     double local_a = my_rank * local_n * DX;
     double local_b = local_a + local_n * DX;
+  
+   double fstart, fnow;
+   struct timespec start, now;
+   clock_gettime(CLOCK_MONOTONIC, &start);
+   fstart = (double)start.tv_sec  + (double)start.tv_nsec / 1000000000.0;
+
+   clock_gettime(CLOCK_MONOTONIC, &now);
+   fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+   printf("\nstart test at %lf\n", fnow-fstart);
+
 
     double local_integation = trapezoidal_rule(local_a, local_b, local_n);
 
@@ -61,9 +73,12 @@ int main(int argc, char* argv[])
         cout.precision(15);
         cout << "The integral of f(x) from 0.0 to " << b << " with " << n << " steps is " << total_integration << endl;
     }
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+    printf("stop test at %lf\n", fnow-fstart);
 
     MPI_Finalize();
-    return 0;
+      return 0;
 }
 
 double function_to_integrate(double x)

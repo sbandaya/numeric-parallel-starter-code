@@ -2,7 +2,7 @@ INCLUDE_DIRS =
 LIB_DIRS = 
 #CC = icc
 CC = gcc
-CPP = g++
+CPP = mpic++
 
 CDEFS=
 CFLAGS= -O3 -g -Wall -fopenmp $(INCLUDE_DIRS) $(CDEFS)
