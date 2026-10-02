@@ -3,26 +3,23 @@
 #include <mpi.h>
 #include <time.h>
 
-#define RANGE (1800) 
-#define DX (0.001)
+#define RANGE (1800.0f) 
+#define DX (0.001f)
 using namespace std;
 
-int thread_count=1;
-
 using namespace std;
-double ex3_accel(double time);
-double ex3_vel(double time);
-double ex3_pos(double time);
+float ex3_accel(float time);
+float ex3_vel(float time);
+float ex3_pos(float time);
 //allows it to 
-double left_riemann_sum(double a, double b, int n, double func(double)) 
+float left_riemann_sum(float a, float b, int n, float func(float)) 
 {
-    double sum = 0.0;
+    float sum = 0.0f;
 
-#pragma omp parallel for num_threads(thread_count) reduction(+:sum)
     for (int idx = 0; idx < n; idx++) 
     {
-        double x = a + idx * DX;
-        double fx = func(x);
+        float x = a + idx * DX;
+        float fx = func(x);
         // Add the value of the function at the left endpoint of each subinterval.
         sum += fx;
     }
@@ -39,16 +36,22 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    const double a = 0.0;
-    const double b = RANGE;
+    const float a = 0.0f;
+    const float b = RANGE;
     const int n = (b-a)/DX; // total steps = stop - start / step size
 
     int local_n = n / comm_sz; // # of steps for each process
 
     //starting and stop points for each process
-    double local_a = my_rank * local_n * DX;
-    double local_b = local_a + local_n * DX;
+    float local_a = my_rank * local_n * DX;
+    float local_b = local_a + local_n * DX;
     
+    float total_velocity = 0.0f;
+    float total_position = 0.0f;
+
+    //added barrier here so that all processes would start at same time for timing
+    MPI_Barrier(MPI_COMM_WORLD);
+
     double fstart, fnow;
     struct timespec start, now;
     clock_gettime(CLOCK_MONOTONIC, &start);
@@ -58,76 +61,76 @@ int main(int argc, char* argv[])
     fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
     printf("\nstart test at %lf\n", fnow-fstart);
 
-    double total_velocity = 0;
-    double total_position = 0;
-    double local_velocity = left_riemann_sum(local_a, local_b, local_n, ex3_accel);
-    double local_position = left_riemann_sum(local_a, local_b, local_n, ex3_vel);
+    float local_velocity = left_riemann_sum(local_a, local_b, local_n, ex3_accel);
+    float local_position = left_riemann_sum(local_a, local_b, local_n, ex3_vel);
 
+    printf("Rank %d: local_a=%f local_b=%f local_n=%d local_velocity=%f local_position=%f\n", my_rank, local_a, local_b, local_n, local_velocity, local_position);
 
-    MPI_Reduce(&local_velocity,&total_velocity,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-    MPI_Reduce(&local_position,&total_position,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+    MPI_Reduce(&local_velocity,&total_velocity,1,MPI_FLOAT,MPI_SUM,0,MPI_COMM_WORLD);
+    MPI_Reduce(&local_position,&total_position,1,MPI_FLOAT,MPI_SUM,0,MPI_COMM_WORLD);
 
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+    printf("stop test at %lf\n", fnow-fstart);
+    
     if(my_rank == 0)
     {
         cout.precision(7);
         cout << "final velocity = " << total_velocity << endl;
         cout << "final position = " << total_position << endl;
     }
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
-    printf("stop test at %lf\n", fnow-fstart);
+
 
     MPI_Finalize();
     
     
     /* SEQUENTIAL
-    double a = 0.0;
-    double b = RANGE;
+    float a = 0.0;
+    float b = RANGE;
     int n = RANGE/DX;
-    double velocity = left_riemann_sum(a,b,n,ex3_accel);
-    double position = left_riemann_sum(a,b,n,ex3_vel);
+    float velocity = left_riemann_sum(a,b,n,ex3_accel);
+    float position = left_riemann_sum(a,b,n,ex3_vel);
     cout << "final velocity = " << velocity << endl;
     cout << "final position = " << position << endl;
     */
 
-    cout.precision(15);
     return 0;
 }
 
 
-double ex3_accel(double time)
+float ex3_accel(float time)
 {
     // computation of time scale for 1800 seconds
-    static double tscale=1800.0/(2.0*M_PI);
+    static float tscale=1800.0f/(2.0f*(float)M_PI);
     // determined such that acceleration will peak to result in translation of 122,000.0 meters
-    //static double ascale=0.2365893166123;
-    static double ascale=0.236589076381454;
+    //static float ascale=0.2365893166123;
+    static float ascale=0.236589076381454f;
 
-    return (sin(time/tscale)*ascale);
+    return (sinf(time/tscale)*ascale);
 }
 
 
 // determined based on known anti-derivative of ex4_accel function
-double ex3_vel(double time)
+float ex3_vel(float time)
 {
     // computation of time scale for 1800 seconds
-    static double tscale=1800.0/(2.0*M_PI);
+    static float tscale=1800.0f/(2.0f*(float)M_PI);
     // determined such that velocity will peak to result in translation of 122,000.0 meters
-    static double vscale=0.236589076381454*1800.0/(2.0*M_PI);
+    static float vscale=0.236589076381454f*1800.0f/(2.0f*(float)M_PI);
 
-    return ((-cos(time/tscale)+1)*vscale);
+    return ((-cosf(time/tscale)+1.0f)*vscale);
 }
 
 
 // determined based on known anti-derivative of ex4_vel function
-double ex3_pos(double time)
+float ex3_pos(float time)
 {
     // computation of time scale for 1800 seconds
-    static double tscale=1800.0/(2.0*M_PI);
+    static float tscale=1800.0f/(2.0f*(float)M_PI);
     // determined such that velocity will peak to result in translation of 122,000.0 meters
-    static double vscale=0.236589076381454*1800.0/(2.0*M_PI);
+    static float vscale=0.236589076381454f*1800.0f/(2.0f*(float)M_PI);
 
-    return ((-tscale*(sin(time/tscale)+time))*vscale);
+    return ((-tscale*(sinf(time/tscale)+time))*vscale);
 }
 
 
