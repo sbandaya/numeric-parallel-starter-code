@@ -9,7 +9,7 @@ CFLAGS= -O3 -g -Wall -fopenmp $(INCLUDE_DIRS) $(CDEFS)
 CFLAGS2= -O0 -g -Wall -fopenmp $(INCLUDE_DIRS) $(CDEFS)
 LIBS=
 
-PRODUCT= hello_riemann hello_trapezoidal hello_simpson hello_rk4
+PRODUCT= hello_riemann hello_trapezoidal hello_simpson hello_rk4 left_train mid_train trapezoidal_train
 
 HFILES= 
 CFILES= 

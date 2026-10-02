@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 
     const float a = 0.0f;
     const float b = RANGE;
-    const int n = (b-a)/DX; // total steps = stop - start / step size
+    const float  n = (b-a)/DX; // total steps = stop - start / step size
 
     int local_n = n / comm_sz; // # of steps for each process
 
@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
     
     if(my_rank == 0)
     {
-        cout.precision(7);
+        cout.precision(15);
         cout << "final velocity = " << total_velocity << endl;
         cout << "final position = " << total_position << endl;
     }

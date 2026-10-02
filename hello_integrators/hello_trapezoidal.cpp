@@ -4,7 +4,7 @@
 //
 #include <iostream>
 #include <cmath>
-//#include <mpi.h> ONLY INCLUDE DURING MPI RUNS
+#include <mpi.h> 
 #include <time.h>
 //#define RANGE (M_PI)
 #define RANGE (100000) //f(x) = 10
