@@ -4,11 +4,9 @@
 #include <time.h>
 
 #define RANGE (1800) 
-//#define DX(0.00001) // scaled example
-#define DX (0.001)
+#define DX (0.0001) // scaled example
+//#define DX (0.001)
 using namespace std;
-
-int thread_count=1;
 
 using namespace std;
 double ex3_accel(double time);
@@ -18,7 +16,6 @@ double ex3_pos(double time);
 double midpoint_riemann_sum(double a, double b, int n, double func(double))
 {
     double sum = 0.0;
-#pragma omp parallel for num_threads(thread_count) reduction(+:sum)
     for (int idx = 0; idx < n; idx++)
     {
         double x = a + ((idx + 0.5) * DX);
