@@ -48,6 +48,8 @@ int main(int argc, char* argv[])
     double local_a = my_rank * local_n * DX;
     double local_b = local_a + local_n * DX;
     
+    MPI_Barrier(MPI_COMM_WORLD);
+
     double fstart, fnow;
     struct timespec start, now;
     clock_gettime(CLOCK_MONOTONIC, &start);
@@ -66,15 +68,16 @@ int main(int argc, char* argv[])
     MPI_Reduce(&local_velocity,&total_velocity,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
     MPI_Reduce(&local_position,&total_position,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
 
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+    printf("stop test at %lf\n", fnow-fstart);
+
     if(my_rank == 0)
     {
         cout.precision(7);
         cout << "final velocity = " << total_velocity << endl;
         cout << "final position = " << total_position << endl;
     }
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
-    printf("stop test at %lf\n", fnow-fstart);
 
     MPI_Finalize();
     
