@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
     double total_position = 0;
     double local_velocity = trapezoidal_rule(local_a, local_b, local_n, ex3_accel);
     double local_position = trapezoidal_rule(local_a, local_b, local_n, ex3_vel);
-
+     printf("Rank %d: local_a=%f local_b=%f local_n=%d local_velocity=%f local_position=%f\n", my_rank, local_a, local_b, local_n, local_velocity, local_position);
 
     MPI_Reduce(&local_velocity,&total_velocity,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
     MPI_Reduce(&local_position,&total_position,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
     printf("stop test at %lf\n", fnow-fstart);
     if(my_rank == 0)
     {
-        cout.precision(7);
+        cout.precision(15);
         cout << "final velocity = " << total_velocity << endl;
         cout << "final position = " << total_position << endl;
     }
