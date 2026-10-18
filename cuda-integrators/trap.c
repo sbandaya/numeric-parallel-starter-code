@@ -26,16 +26,11 @@ float Trap(const float a, const float b, const int n);
 
 int main(void) {
    float  integral;   /* Store result in integral   */
-   float  a, b;       /* Left and right endpoints   */
-   int    n;          /* Number of trapezoids       */
+   float  a = 0 , b = M_PI;       /* Left and right endpoints   */
+   int    n = 1000000;          /* Number of trapezoids       */
 
-   printf("Enter a, b, and n\n");
-   scanf("%f", &a);
-   scanf("%f", &b);
-   scanf("%d", &n);
 
    integral = Trap(a, b, n);
-   
    printf("With n = %d trapezoids, our estimate\n", n);
    printf("of the integral from %f to %f = %f\n",
       a, b, integral);
