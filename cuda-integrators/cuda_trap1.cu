@@ -33,13 +33,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "timer.h"
-
+#include <math.h>
 #ifndef SAVE_STATS
 #define ITERS 50
 #else
 #include "save_stats.h"
 #endif
-
+#define WARP_SZ 32 //used for warp shuffle 
+#define blockSize 1024 //max threads per block
 /*-------------------------------------------------------------------
  * Function:    f
  * Purpose:     The function we're integrating, callable from 
@@ -69,17 +70,26 @@ __global__ void Dev_trap(
       const float  h       /* in     */, 
       const int    n       /* in     */, 
       float*       trap_p  /* in/out */) {
+   unsigned mask = 0xffffffff ;
    int my_i = blockDim.x * blockIdx.x + threadIdx.x;
+   float my_trap = 0.0f;
+   
+   if (0 < my_i && my_i < n)
+   {
+      my_trap = f(a + my_i*h);
+   }
 
-   /* f(x_0) and f(x_n) were computed on the host.  So */
-   /* compute f(x_1), f(x_2), ..., f(x_(n-1))          */
-   if (0 < my_i && my_i < n) {
-      float my_x = a + my_i*h;
-      float my_trap = f(my_x);
+   for (int diff = WARP_SZ/2; diff > 0; diff = diff/2)
+   {
+      my_trap += __shfl_down_sync(mask, my_trap, diff);
+   }
+
+   //
+   if (threadIdx.x % 32 == 0)
+   {
       atomicAdd(trap_p, my_trap);
    }
-}  /* Dev_trap */    
-
+}  /* Dev_trap */  
 
 /*-------------------------------------------------------------------
  * Host code 
@@ -154,6 +164,7 @@ int main(int argc, char* argv[]) {
  *            number or there aren't enough threads, print a message 
  *            and quit.
  */
+ /*
 void Get_args(const int argc, char* argv[], int* n_p, 
       float* a_p, float* b_p, 
       int* blk_ct_p, int* th_per_blk_p) {
@@ -172,8 +183,26 @@ void Get_args(const int argc, char* argv[], int* n_p,
       fprintf(stderr, "Number of threads must be >= n\n");
       exit(0);
    }
-}  /* Get_args */
+}  Get_args */
 
+/*
+* endpoints are hardcode for [0,pi]
+* threads per block are hardcoded to maximum blocksize
+* block count takes steps and uses ceiling division with threads per block
+*/
+void Get_args(const int argc, char* argv[], int* n_p, float* a_p, float* b_p, int* blk_ct_p, int* th_per_blk_p) {
+
+   if (argc != 2) {
+      fprintf(stderr, "usage: %s <n> \n", 
+            argv[0]);
+      exit(0);
+   }
+   *n_p = strtol(argv[1], NULL, 10);
+   *a_p = 0;
+   *b_p = M_PI; // this probably doesnt work 
+   *th_per_blk_p = blockSize;
+   *blk_ct_p = (*n_p+ *th_per_blk_p -1) / *th_per_blk_p;
+}
 
 /*-------------------------------------------------------------------
  * Function:  Trap_wrapper
