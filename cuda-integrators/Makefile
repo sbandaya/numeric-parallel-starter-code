@@ -116,7 +116,7 @@ cuda_trap1: cuda_trap1.o
 original_cuda_trap1.o: original_cuda_trap1.cu
 	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(INCLUDES) -o $@ -c $<
 
-original_cuda_trap1: original_cuda_trap1cuda_trap1.o
+original_cuda_trap1: original_cuda_trap1.o
 	$(GCC) $(CCFLAGS) -o $@ $+ $(LDFLAGS) $(EXTRA_LDFLAGS)
 
 cuda_trap2.o: cuda_trap2.cu
