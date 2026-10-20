@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "timer.h"
-#include <math.h>
 #ifndef SAVE_STATS
 #define ITERS 50
 #else
@@ -199,7 +198,7 @@ void Get_args(const int argc, char* argv[], int* n_p, float* a_p, float* b_p, in
    }
    *n_p = strtol(argv[1], NULL, 10);
    *a_p = 0;
-   *b_p = M_PI; // this probably doesnt work 
+   *b_p = 3.14159265359; 
    *th_per_blk_p = blockSize;
    *blk_ct_p = (*n_p+ *th_per_blk_p -1) / *th_per_blk_p;
 }
