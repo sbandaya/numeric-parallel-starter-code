@@ -9,7 +9,7 @@ OMP_CFLAGS= -O0 -fopenmp $(INCLUDE_DIRS) $(CDEFS)
 CFLAGS= -O0 $(INCLUDE_DIRS) $(CDEFS)
 #CFLAGS= -O0 $(INCLUDE_DIRS) $(CDEFS)
 LIBS= -lm
-
+MPI_OMP_CFLAGS= -O0 -fopenmp $(INCLUDE_DIRS) $(CDEFS)
 HFILES= 
 CFILES= timeprofiles.c timeprofiles_omp.c csvtostatic.c
 
@@ -35,8 +35,8 @@ timeprofiles_omp: timeprofiles_omp.c
 timeprofiles: timeprofiles.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o $(LIBS)
 
-timeinterp: timeinterp.o
-	$(MPICC) $(LDFLAGS) $(MPI_OMP_CFLAGS) -o $@ $@.o $(LIBS)
+timeinterp: timeinterp.c
+	$(MPICC) $(LDFLAGS) $(MPI_OMP_CFLAGS) -o $@ $@.c $(LIBS)
 
 depend:
 

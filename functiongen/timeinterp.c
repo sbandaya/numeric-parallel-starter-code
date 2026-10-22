@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     MPI_Barrier(MPI_COMM_WORLD);
     t_start = MPI_Wtime();
 
-    double local_accel[steps]; //values for a given process
+    double *local_accel = malloc(steps * sizeof(double));
     #pragma omp parallel for num_threads(NUM_THREADS) private(time)
     for(idx = start; idx < end; idx++)
     {
@@ -119,6 +119,7 @@ int main(int argc, char *argv[])
         }
         printf("Interpolation time = %lf sec\n", t_end - t_start);
         free(total_accel);
+        free(local_accel);
     }
     MPI_Finalize();
     return 0;
