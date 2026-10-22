@@ -1,7 +1,7 @@
 INCLUDE_DIRS = 
 LIB_DIRS = 
-CC=gcc
-#CC=icc
+CC=gcc 
+MPICC=mpicc
 
 CDEFS=
 OMP_CFLAGS= -O0 -fopenmp $(INCLUDE_DIRS) $(CDEFS)
@@ -21,7 +21,7 @@ all:	timeprofiles timeprofiles_omp csvtostatic timeinterp
 clean:
 	-rm -f *.o *.d
 	-rm -f timeprofiles timeprofiles_omp csvtostatic timeinterp
-
+	-rm -f timeprofiles timeprofiles_omp csvtostatic timeinterp
 distclean:
 	-rm -f *.o *.d
 	-rm -f timeprofiles timeprofiles_omp csvtostatic
@@ -36,7 +36,7 @@ timeprofiles: timeprofiles.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o $(LIBS)
 
 timeinterp: timeinterp.o
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o $(LIBS)
+	$(MPICC) $(LDFLAGS) $(MPI_OMP_CFLAGS) -o $@ $@.o $(LIBS)
 
 depend:
 
