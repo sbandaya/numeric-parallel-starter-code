@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <mpi.h>
+#include <omp.h>
 
 // For values between 1 second indexed data, use linear interpolation to determine profile value at any "t".
 //
@@ -33,44 +35,93 @@ double faccel(double time);
 
 // This is the number of interpolation steps (data to generate) between table data values
 #define STEPS_PER_SEC (10)
-
-void main(int argc, char *argv[])
+#define NUM_THREADS (2)
+int main(int argc, char *argv[])
 {
+    int my_rank, comm_sz;
     int idx;
-    int steps_per_sec=STEPS_PER_SEC;
-    double time, dt;
+    int steps_per_sec=STEPS_PER_SEC,start,end,steps;
+    double time, dt, t_start, t_end;
 
+    MPI_Init(NULL,NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    printf("argc=%d, argv[0]=%s\n", argc, argv[0]);
+    if(my_rank == 0)
+    {
+        printf("argc=%d, argv[0]=%s\n", argc, argv[0]);
+    }
 
     if(argc == 2)
     {
         sscanf(argv[1], "%d", &steps_per_sec);
-        printf("Will use %d steps per sec\n", steps_per_sec);
+        if(my_rank == 0)
+        { 
+            printf("Will use %d steps per sec\n", steps_per_sec);
+        }
     }
     else
     {
-        printf("Use: trainprofile [steps_per_sec]\n");
-        printf("Will use default time profile\n");
+        if(my_rank == 0)
+        {
+            printf("Use: trainprofile [steps_per_sec]\n");
+            printf("Will use default time profile\n");
+        }
     }
 
     dt = 1.0 / steps_per_sec;
+    steps = (steps_per_sec * 1800) / comm_sz; // number of steps per process
 
-    printf("Step size of %lf\n", dt);
+    if(my_rank == 0)
+    {
+        printf("Step size of %lf\n", dt);
 
-    // Verify the static initializer or loaded CSV array for size and values
-    //
-    // And use it to generate values between 1 second given values.
-    //
-    printf("Number of values in profile = %lu for 1801 expected\n", sizeof(DefaultProfile)/sizeof(double));
+        // Verify the static initializer or loaded CSV array for size and values
+        //
+        // And use it to generate values between 1 second given values.
+        //
+        printf("Number of values in profile = %lu for 1801 expected\n", sizeof(DefaultProfile)/sizeof(double));
+    }
 
-    for(idx=0; idx <= (steps_per_sec*1800); idx++)
+    start = my_rank * steps;
+    end = start + steps; 
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    t_start = MPI_Wtime();
+
+    double local_accel[steps]; //values for a given process
+    #pragma omp parallel for num_threads(NUM_THREADS) private(time)
+    for(idx = start; idx < end; idx++)
     {
         // time you would use in your integrator and faccel(time) is the fuction to integrate
         time = 0.0 + (dt*(double)idx);
-        printf("%015.14lf, %015.14lf\n", time, faccel(time));
+        local_accel[idx - start] = faccel(time);
     }
 
+    t_end = MPI_Wtime();
+
+    //allocates 
+    double *total_accel = NULL;
+    if(my_rank == 0)
+    {
+        total_accel = malloc((steps * comm_sz + 1) * sizeof(double));
+    }
+    MPI_Gather(local_accel, steps, MPI_DOUBLE, total_accel, steps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    if(my_rank == 0)
+    {
+        //add final accel point
+        total_accel[steps * comm_sz] = faccel(1800);
+        for(idx = 0; idx <= (steps_per_sec*1800); idx++)
+        {
+            time = 0.0 + (dt*(double)idx);
+            printf("%015.14lf, %015.14lf\n", time, total_accel[idx]);
+        }
+        printf("Interpolation time = %lf sec\n", t_end - t_start);
+        free(total_accel);
+    }
+    MPI_Finalize();
+    return 0;
 }
 
 
@@ -86,7 +137,7 @@ double table_accel(int timeidx)
     if(timeidx > tsize)
     {
         printf("timeidx=%d exceeds table size = %lu and range %d to %lu\n", timeidx, tsize, 0, tsize-1);
-        exit(-1);
+        MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
     return DefaultProfile[timeidx];
