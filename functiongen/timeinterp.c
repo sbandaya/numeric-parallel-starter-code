@@ -112,15 +112,25 @@ int main(int argc, char *argv[])
     {
         //add final accel point
         total_accel[steps * comm_sz] = faccel(1800);
+
+        FILE *fp = fopen("problem2.csv", "w");
+        if(fp == NULL)
+        {
+            perror("Error opening problem2.csv");
+            MPI_Abort(MPI_COMM_WORLD, -1);
+        }
+
         for(idx = 0; idx <= (steps_per_sec*1800); idx++)
         {
             time = 0.0 + (dt*(double)idx);
-            printf("%015.14lf, %015.14lf\n", time, total_accel[idx]);
+            fprintf(fp, "%015.14lf,%015.14lf\n", time, total_accel[idx]);
         }
+        fclose(fp);
+
         printf("Interpolation time = %lf sec\n", t_end - t_start);
         free(total_accel);
-        free(local_accel);
     }
+    free(local_accel);
     MPI_Finalize();
     return 0;
 }
