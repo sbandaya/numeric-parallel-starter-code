@@ -3,7 +3,6 @@
 #include <math.h>
 #include <time.h>
 #include <mpi.h>
-#include <omp.h>
 
 // For values between 1 second indexed data, use linear interpolation to determine profile value at any "t".
 //
@@ -18,6 +17,7 @@
 //#include "ex3accel.h"
 //#include "ex6lin.h"
 #include "ex4.h"
+
 
 // table look-up for acceleration profile given and velocity profile determined
 //
@@ -35,7 +35,6 @@ double faccel(double time);
 
 // This is the number of interpolation steps (data to generate) between table data values
 #define STEPS_PER_SEC (10)
-#define NUM_THREADS (2)
 int main(int argc, char *argv[])
 {
     int my_rank, comm_sz;
@@ -85,21 +84,20 @@ int main(int argc, char *argv[])
 
     start = my_rank * steps;
     end = start + steps; 
+    double *local_accel = malloc(steps * sizeof(double));
 
     MPI_Barrier(MPI_COMM_WORLD);
     t_start = MPI_Wtime();
-
-    double *local_accel = malloc(steps * sizeof(double));
-    #pragma omp parallel for num_threads(NUM_THREADS) private(time)
     for(idx = start; idx < end; idx++)
     {
         // time you would use in your integrator and faccel(time) is the fuction to integrate
         time = 0.0 + (dt*(double)idx);
         local_accel[idx - start] = faccel(time);
     }
-
     t_end = MPI_Wtime();
-
+    double max_t;
+    double local_t = t_end - t_start;
+    MPI_Reduce(&local_t, &max_t , 1, MPI_DOUBLE, MPI_MAX,0,MPI_COMM_WORLD);
     //allocates 
     double *total_accel = NULL;
     if(my_rank == 0)
@@ -127,7 +125,7 @@ int main(int argc, char *argv[])
         }
         fclose(fp);
 
-        printf("Interpolation time = %lf sec\n", t_end - t_start);
+        printf("Interpolation time = %lf sec\n", max_t);
         free(total_accel);
     }
     free(local_accel);
