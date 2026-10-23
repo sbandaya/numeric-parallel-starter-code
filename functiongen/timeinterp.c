@@ -1,3 +1,4 @@
+/*
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -194,3 +195,4 @@ double faccel(double time)
                table_accel(timeidx) + ( (table_accel(timeidx_next) - table_accel(timeidx)) * delta_t)
            );
 }
+*/
