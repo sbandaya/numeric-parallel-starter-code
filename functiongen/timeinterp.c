@@ -69,8 +69,6 @@ int main(int argc, char *argv[])
     }
 
     dt = 1.0 / steps_per_sec;
-    steps = (steps_per_sec * 1800) / comm_sz; // number of steps per process
-
     if(my_rank == 0)
     {
         printf("Step size of %lf\n", dt);
@@ -82,6 +80,7 @@ int main(int argc, char *argv[])
         printf("Number of values in profile = %lu for 1801 expected\n", sizeof(DefaultProfile)/sizeof(double));
     }
 
+    steps = (steps_per_sec * 1800) / comm_sz; // number of steps per process
     start = my_rank * steps;
     end = start + steps; 
     double *local_accel = malloc(steps * sizeof(double));
