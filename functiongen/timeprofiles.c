@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-
+#include <mpi.h>
 // For values between 1 second indexed data, use linear interpolation to determine profile value at any "t".
 //
 // Wikipedia - https://en.wikipedia.org/wiki/Linear_interpolation
@@ -17,36 +17,13 @@
 // knowledge of the profile function as a linear, polynomial, or transcendental function or combination there-of, and
 // this may not be known.
 
-//#include "ex3accel.h"
-//#include "ex3.h"
 #include "ex4.h"
-//#include "ex6lin.h"
-//#include "ex6nonlin.h"
-
-
 // table look-up for acceleration profile given and velocity profile determined
 double table_accel(int timeidx);
-double table_vel(int timeidx);
-
 // indirect generation of acceleration or velocity at any time with table interpolation
 double faccel(double time);
-double fvel(double time);
 
-// direct generation of acceleration at any time with math library and arithmetic
-double ex3_accel(double time);
-double ex4_accel(double time);
-double ex4_vel(double time);
-
-// Create velocity and position profiles (tables) the same size as acceleration profile
-double VelProfile[sizeof(DefaultProfile) / sizeof(double)];
-double PosProfile[sizeof(DefaultProfile) / sizeof(double)];
-
-// Implement methods of integration
-double Local_Riemann(double a, double b, int n, double func(double));
-double Local_Trap(double a, double b, int n, double func(double));
-
-
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     int idx;
     double time, dt=1.0; // dt=1.0 is the default to match spreadsheet
@@ -55,30 +32,42 @@ void main(int argc, char *argv[])
     int steps_per_idx=integration_steps/tsize;
     unsigned long istep=0;
     int thread_count=1;
-    double AccelStep, VelStep, PosStep, PeakVel = 0;
-    struct timespec start, end;
-    double fstart, fend;
+    int start,end;
+    double AccelStep, VelStep = 0, PosStep= 0, PeakVel = 0,FinalPos,FinalVel,local_PeakVel;
+    double t_start, t_end, local_t, max_t;
+
+    int my_rank, comm_sz;                                                  
+    MPI_Init(&argc, &argv);                                              
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);                               
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);          
 
     printf("argc=%d, argv[0]=%s\n", argc, argv[0]);
     if(argc == 2)
     {
         sscanf(argv[1], "%d", &thread_count);
-        printf("Use: trainprofile [thread_count] [dt]\n");
-        printf("Will use default time profile and use thread_count=%d\n", thread_count);
+        if(my_rank == 0)
+        {
+            printf("Use: trainprofile [thread_count] [dt]\n");
+            printf("Will use default time profile and use thread_count=%d\n", thread_count);
+        }
     }
     else if(argc == 3) 
     {
         sscanf(argv[1], "%d", &thread_count);
         sscanf(argv[2], "%lf", &dt);
-        integration_steps = (unsigned long) ((double)tsize / dt); //?
-        steps_per_idx=integration_steps/tsize; //?
-        printf("Use: trainprofile [thread_count] [dt]\n");
-        printf("Will use default time profile and use thread_count=%d, with dt=%lf for %lu steps and %d steps per table entry\n", thread_count, dt, integration_steps, steps_per_idx);
+        if(my_rank == 0)
+        {
+            printf("Use: trainprofile [thread_count] [dt]\n");
+            printf("Will use default time profile and use thread_count=%d, with dt=%lf for %lu steps and %d steps per table entry\n", thread_count, dt, integration_steps, steps_per_idx);
+        }
     }
     else
     {
-        printf("Use: trainprofile [thread_count] [dt]\n");
-        printf("Will use default time profile\n");
+        if(my_rank == 0)
+        {
+            printf("Use: trainprofile [thread_count] [dt]\n");
+            printf("Will use default time profile\n");
+        }
     }
 
     // Verify the static initializer or loaded CSV array for size and values
@@ -88,21 +77,23 @@ void main(int argc, char *argv[])
     //
     // This is just a simple spot-checking test of expected values
     //
-    printf("Number of values in profile = %lu for 1801 expected\n", sizeof(DefaultProfile)/sizeof(double));
 
-    // Left Riemann sum test to match spreadsheet with shared data approach
-    printf("\n\nLeft Riemann sum test for table with %d elements\n", tsize);
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    VelProfile[0] = 0.0; VelStep=0;
-    PosProfile[0] = 0.0; PosStep=0;
+    if(my_rank == 0)
+    {
+        printf("Number of values in profile = %lu for 1801 expected\n", sizeof(DefaultProfile)/sizeof(double));
+        // Left Riemann sum test to match spreadsheet with shared data approach
+        printf("\n\nLeft Riemann sum test for table with %d elements\n", tsize);
+    }
     idx=0;
+    integration_steps = (unsigned long) ((double)(tsize-1) / dt+0.5)/comm_sz; 
+    start = my_rank * integration_steps;
+    end = start + integration_steps;
+    double *local_vel = malloc(integration_steps * sizeof(double)); 
 
+    MPI_Barrier(MPI_COMM_WORLD);     
+    t_start = MPI_Wtime();
 
-    // **** SIMPLE SEQUENTIAL SHARED DATA INTEGRATION
-    //
-    // Hard to speed up due to data dependencies.
-    //
-    for(istep=1; istep < integration_steps; istep++)
+    for(istep= start; istep < end; istep++)
     {
 	    // for Left Riemann take acceleration at current time and add to previous value
 	    time = (double)istep * dt;
@@ -114,29 +105,51 @@ void main(int argc, char *argv[])
         {
             PeakVel = VelStep;
         }
-        if((istep % steps_per_idx) == 0) 
-        {
-            idx++;
-            VelProfile[idx] = VelStep;
-        }
-
-	    // Note that position must be determined from velocity determined above
-        PosStep = PosStep + (VelStep * dt);
-
-        if((istep % steps_per_idx) == 0) 
-        {
-            PosProfile[idx] = PosStep;
-        }
+        local_vel[istep - start] = VelStep;
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    fstart=start.tv_sec + (start.tv_nsec / 1000000000.0);
-    fend=end.tv_sec + (end.tv_nsec / 1000000000.0);
+    double *total_velocity = NULL, *VelStart = NULL, local_VelStart;
+    if(my_rank == 0)
+    {
+        total_velocity = malloc(comm_sz * sizeof(double));
+        VelStart = malloc(comm_sz * sizeof(double));
+    }
+    MPI_Gather(&VelStep, 1, MPI_DOUBLE,  total_velocity, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+ 
+    if(my_rank == 0)
+    {
+        double sum = 0.0;
+        for(idx = 0; idx < comm_sz; idx++)
+        {
+            VelStart[idx] = sum;
+            sum = sum + total_velocity[idx];
+        }
+    }
+    MPI_Scatter(VelStart, 1, MPI_DOUBLE, &local_VelStart, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    
+    for(istep = start; istep < end; istep++)
+    {
+        PosStep = PosStep + ((local_vel[istep - start] + local_VelStart) * dt);
+    }
 
-    printf("Train from table in %lf seconds with %d samples: final velocity = %lf, final position = %lf, Peak velocity = %lf\n", 
-	       (fend-fstart), tsize, VelProfile[tsize-1], PosProfile[tsize-1],PeakVel);
+    local_PeakVel = PeakVel + local_VelStart;
+    MPI_Reduce(&PosStep, &FinalPos, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&VelStep, &FinalVel, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&local_PeakVel,&PeakVel,1, MPI_DOUBLE,MPI_MAX,0, MPI_COMM_WORLD);
+    t_end = MPI_Wtime();
+    local_t = t_end - t_start;
+    MPI_Reduce(&local_t, &max_t, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    if(my_rank == 0)
+    {
+        printf("Train from table in %lf seconds with %d samples: final velocity = %lf, final position = %lf, Peak velocity = %lf\n", 
+	    max_t, tsize,FinalVel,FinalPos,PeakVel);
+        free(total_velocity);
+        free(VelStart);
+    }
+    free(local_vel);
+    MPI_Finalize();
 
-    exit(0);
+    return(0);
 }
 
 // Simple look-up in accleration profile array
@@ -151,7 +164,7 @@ double table_accel(int timeidx)
     if(timeidx > tsize)
     {
         printf("timeidx=%d exceeds table size = %lu and range %d to %lu\n", timeidx, tsize, 0, tsize-1);
-        exit(-1);
+        MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
     return DefaultProfile[timeidx];
