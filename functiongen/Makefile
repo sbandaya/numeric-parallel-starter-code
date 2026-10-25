@@ -16,7 +16,7 @@ CFILES= timeprofiles.c timeprofiles_omp.c csvtostatic.c
 SRCS= ${HFILES} ${CFILES}
 OBJS= ${CFILES:.c=.o}
 
-all:	timeprofiles_omp csvtostatic timeinterp
+all:	timeprofiles_omp csvtostatic timeinterp timeprofiles
 
 clean:
 	-rm -f *.o *.d
