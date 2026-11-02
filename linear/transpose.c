@@ -6,7 +6,8 @@
 // C Program to find transpose 
 // of a square matrix 
 #include <stdio.h> 
-#define N 1024 
+#include <time.h>
+#define N 8192
   
 // This function stores transpose 
 // of A[][] in B[][] 
@@ -32,22 +33,15 @@ int B[N][N], i, j;
 // Driver code 
 int main() 
 { 
-    transpose(A, B); 
-  
-    printf("Result matrix is \n"); 
-    for (i = 0; i < N; i++) { 
-        for (j = 0; j < N; j++) 
-            printf("%d ", B[i][j]); 
-        printf("\n"); 
-    } 
-
-    printf("Original matrix is \n"); 
-    for (i = 0; i < N; i++) { 
-        for (j = 0; j < N; j++) 
-            printf("%d ", A[i][j]); 
-        printf("\n"); 
-    } 
-  
-    return 0; 
+   transpose(A,B);
+   double fstart, fnow;
+   struct timespec start, now;
+   clock_gettime(CLOCK_MONOTONIC, &start);
+   fstart = (double)start.tv_sec  + (double)start.tv_nsec / 1000000000.0;
+   transpose(A, B); 
+   clock_gettime(CLOCK_MONOTONIC, &now);
+   fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+   printf("N=%d transpose time = %.6lf ms\n", N, (fnow - fstart) * 1000.0);
+   return 0; 
 }
 
