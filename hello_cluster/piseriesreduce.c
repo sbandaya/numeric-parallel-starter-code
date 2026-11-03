@@ -21,7 +21,7 @@ int main(int argc, char** argv)
   double local_sum=0.0, g_sum=0.0, local_num=1.0;
   unsigned int length;
   unsigned int sub_length;
-
+  double fstart, fnow;
   if(argc < 2)
   {
       printf("usage: piseriesreduce <series n>\n");
@@ -42,6 +42,13 @@ int main(int argc, char** argv)
   if(my_rank == 0)
   printf("comm_sz=%d, length=%u, sub_length=%u\n", comm_sz, length, sub_length);
 
+  MPI_Barrier(MPI_COMM_WORLD);
+  fstart = MPI_Wtime();
+  if(my_rank == 0)
+  {
+    fnow = MPI_Wtime();
+    printf("\nstart test at %lf\n", fnow-fstart);
+  }
   // sum the sub-series for the rank for Leibniz's formula for pi/4
   for(idx = my_rank*sub_length; idx < (sub_length*(my_rank+1)); idx++)
   {
@@ -58,7 +65,7 @@ int main(int argc, char** argv)
     euler_local_sum += 2.0 / (((4.0 * (double)idx) + 1.0) * (4.0 * (double)idx + 3.0));
   }
 
-  printf("my_rank=%d, iterated up to %d, local_sum=%15.14lf\n", my_rank, idx, local_sum);
+  printf("my_rank=%d, iterated up to %d, local_sum=%15.14lf\n", my_rank, idx, euler_local_sum);
 
 
 
@@ -71,6 +78,8 @@ int main(int argc, char** argv)
 
   if(my_rank == 0)
   {
+      fnow = MPI_Wtime();
+      printf("stop test at %lf\n", fnow-fstart);
       printf("20 decimals of pi  =3.14159265358979323846\n");
       printf("C math library pi  =%15.14lf\n", M_PI);
       printf("Madhava-Leibniz pi =%15.14lf, ppb error=%15.14lf\n", (4.0*g_sum), 1000000000.0*(M_PI - (4.0*g_sum)));

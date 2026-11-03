@@ -19,6 +19,7 @@ int main(int argc, char** argv)
   double local_sum=0.0, g_sum=0.0, local_num=1.0;
   unsigned int length;
   unsigned int sub_length;
+  double fstart, fnow;
 
   if(argc < 2)
   {
@@ -36,8 +37,13 @@ int main(int argc, char** argv)
   MPI_Init(NULL, NULL);
   MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-
-
+  fstart = MPI_Wtime();
+  if(my_rank == 0)
+  {
+    fnow = MPI_Wtime();
+    printf("\nstart test at %lf\n", fnow-fstart);
+  }
+  
   // Dividing Work - we use a sub-interval for the series computations and we'll sum the sums
   // to get the final result after all MPI workers are done.
   //
@@ -67,9 +73,10 @@ int main(int argc, char** argv)
   //
   MPI_Reduce(&local_sum, &g_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-
   if(my_rank == 0)
   {
+      fnow = MPI_Wtime();
+      printf("stop test at %lf\n", );
       printf("20 decimals of pi  =3.14159265358979323846\n");
       printf("C math library pi  =%15.14lf\n", M_PI);
       printf("Madhava-Leibniz pi =%15.14lf, ppb error=%15.14lf\n", (4.0*g_sum), 1000000000.0*(M_PI - (4.0*g_sum)));
