@@ -8,16 +8,16 @@ CFLAGS= -O0 -fopenmp $(INCLUDE_DIRS) $(CDEFS)
 LIBS= 
 
 HFILES= 
-CFILES= gewpp.c gewppoff.c gewpporig.c gaussjord.c lufact.c gsit.c gsitbad.c
+CFILES= gewpp.c gewppoff.c gewpporig.c gaussjord.c lufact.c gsit.c gsitbad.c sequential_matrixmult.c
 
 SRCS= ${HFILES} ${CFILES}
 OBJS= ${CFILES:.c=.o}
 
-all:	gewpp gewppoff gewpporig gaussjord gaussjordomp lufact gsit gsitet gsit2 gsitant gsit5 gsitbad gewppomp vmult testgen transpose
+all:	gewpp gewppoff gewpporig gaussjord gaussjordomp lufact gsit gsitet gsit2 gsitant gsit5 gsitbad gewppomp vmult testgen transpose sequential_matrixmult
 
 clean:
 	-rm -f *.o *.d
-	-rm -f gewpp gewppoff gewpporig gaussjord gaussjordomp lufact gsit gsitet gsitant gewppomp vmult testgen gsit2 gsit5 gsitbad transpose
+	-rm -f gewpp gewppoff gewpporig gaussjord gaussjordomp lufact gsit gsitet gsitant gewppomp vmult testgen gsit2 gsit5 gsitbad transpose sequential_matrixmult
 
 distclean:
 	-rm -f *.o *.d
@@ -25,6 +25,9 @@ distclean:
 
 gewppomp: gewppomp.o
 	$(CC) $(LDFLAGS) -fopenmp $(CFLAGS) -o $@ $@.o
+
+sequential_matrixmult.c: sequential_matrixmult.o
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o
 
 gewpp: gewpp.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o
