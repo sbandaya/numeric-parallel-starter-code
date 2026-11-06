@@ -56,8 +56,12 @@ int main(){
         return 1;
     }
  
-    double A[N][N], B[N][N], C[N][N];
-    double x[N], y[N];
+    //allocate memory for matricies to support 1000x1000 memory
+    double (*A)[N] = malloc(sizeof(double[N][N]));
+    double (*B)[N] = malloc(sizeof(double[N][N]));
+    double (*C)[N] = calloc(N, sizeof(double[N]));  
+    double *x = malloc(N * sizeof(double));
+    double *y = calloc(N, sizeof(double));      
  
     //zero out the resulting C matrix
     for (int row = 0; row < N; row++)
