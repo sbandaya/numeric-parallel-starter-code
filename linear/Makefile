@@ -26,7 +26,7 @@ distclean:
 gewppomp: gewppomp.o
 	$(CC) $(LDFLAGS) -fopenmp $(CFLAGS) -o $@ $@.o
 
-sequential_matrixmult.c: sequential_matrixmult.o
+sequential_matrixmult: sequential_matrixmult.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o
 
 gewpp: gewpp.o
