@@ -35,6 +35,10 @@ int main(int argc, char** argv)
   sub_length = length / NUM_THREADS;
   printf("Number of Threads=%d, length=%u, sub_length=%u\n", NUM_THREADS, length, sub_length);
 
+  //needed for timing purposes to generate threads similar to mpi timing
+  #pragma omp parallel num_threads(NUM_THREADS)
+   { }
+
    double fstart, fnow;
    struct timespec start, now;
    clock_gettime(CLOCK_MONOTONIC, &start);
