@@ -2,7 +2,7 @@ INCLUDE_DIRS =
 LIB_DIRS = 
 #CC = icc
 CC = gcc
-CPP = mpic++
+CPP = g++
 
 CDEFS=
 CFLAGS= -O3 -g -Wall -fopenmp $(INCLUDE_DIRS) $(CDEFS)
@@ -14,7 +14,7 @@ PRODUCT= hello_riemann hello_trapezoidal hello_simpson hello_rk4 left_train mid_
 HFILES= 
 CFILES= 
 HPPFILES= 
-CPPFILES= hello_riemann.cpp hello_trapezoidal.cpp hello_simpson.cpp hello_rk4.cpp left_train.cpp rapezoidal_train.cpp mid_train.cpp
+CPPFILES= hello_riemann.cpp hello_trapezoidal.cpp hello_simpson.cpp hello_rk4.cpp left_train.cpp trapezoidal_train.cpp mid_train.cpp
 
 SRCS= ${HFILES} ${CFILES}
 OBJS= ${CFILES:.c=.o}

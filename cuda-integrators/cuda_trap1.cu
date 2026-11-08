@@ -83,7 +83,6 @@ __global__ void Dev_trap(
       my_trap += __shfl_down_sync(mask, my_trap, diff);
    }
 
-   //
    if (threadIdx.x % 32 == 0)
    {
       atomicAdd(trap_p, my_trap);
