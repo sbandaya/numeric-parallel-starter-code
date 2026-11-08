@@ -59,9 +59,9 @@ int main(){
     //allocate memory for matricies to support 1000x1000 memory
     double (*A)[N] = malloc(sizeof(double[N][N]));
     double (*B)[N] = malloc(sizeof(double[N][N]));
-    double (*C)[N] = malloc(sizeof(double[N]));  
+    double (*C)[N] = malloc(sizeof(double[N][N]));  
     double *x = malloc(N * sizeof(double));
-    double *y = malloc(n* sizeof(double));      
+    double *y = malloc(N * sizeof(double));      
 
     //zero out the resulting C matrix
     for (int row = 0; row < N; row++)
@@ -101,10 +101,10 @@ int main(){
 
     clock_gettime(CLOCK_MONOTONIC, &now);
     fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
-    /* for verification
-    printf("\nA * B =\n");
-    print_mat(N, C);
-    */
+    // for verification
+    //printf("\nA * B =\n");
+    //print_mat(N, C);
+    
     printf("Matrix multiplication time:%lf\n", fnow-fstart);
 
     clock_gettime(CLOCK_MONOTONIC, &start);
@@ -113,10 +113,10 @@ int main(){
     column_mult(N, A, x, y);
     clock_gettime(CLOCK_MONOTONIC, &now);
     fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
-    /* for verification
-    printf("\nA * x =\n");
-    print_vec(N, y);
-    */
+    //for verification
+    //printf("\nA * x =\n");
+    //print_vec(N, y);
+    
     printf("Vector multiplication time:%lf\n", fnow-fstart);
 
     free(A); free(B); free(C); free(x); free(y);

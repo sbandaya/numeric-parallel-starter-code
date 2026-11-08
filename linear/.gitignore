@@ -1,0 +1,5 @@
+*.o
+linear/transpose
+*.o
+linear/transpose
+linear/sequential_matrixmult
