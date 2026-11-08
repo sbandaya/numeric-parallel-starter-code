@@ -13,7 +13,7 @@
 //
 // The second series is the summation of 2 / ((4n+1)(4n+3)) for n=0 to infinity
 //
-#define NUM_THREADS (2)
+#define NUM_THREADS (1)
 
 int main(int argc, char** argv)
 {
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
     my_rank = omp_get_thread_num();
     local_sum = 0.0;
     euler_local_sum = 0.0;
-
+    local_num = 1.0;
     // sum the sub-series for the rank for Leibniz's formula for pi/4
     for(idx = my_rank*sub_length; idx < (sub_length*(my_rank+1)); idx++)
     {
