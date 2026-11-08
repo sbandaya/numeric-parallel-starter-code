@@ -83,6 +83,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
 #define ICHAR 80  // Length of array holding description of the problem
 #define IDEBUG 0  // Flag to enable printing of intermediate results of decomposition =1 yes, =0 no.
@@ -103,6 +104,9 @@ int main (int argc, char *argv[])
     char   desc[ICHAR];         // file header description 
     int    row_idx, col_jdx, n; // indexes into arrays and dimention of linear system
     FILE   *finput;             // file pointer to description, dimension, coefficients, and RHS
+
+    struct timespec start, end;
+    double fstart=0.0, fend=0.0;
 
     // Open the file containing:
     // 1) a description, 
@@ -229,8 +233,16 @@ int main (int argc, char *argv[])
     // Note that this function call will potentially rearrange "a" and "b", so we must save a and b
     // from original input for verification.
     //
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
 	gauss(a, b, x, n); 
 
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    fstart=start.tv_sec + (start.tv_nsec / 1000000000.0);
+    fend=end.tv_sec + (end.tv_nsec / 1000000000.0);
+
+
+    printf("\nSolution x in %lf ", (fend-fstart));
     printf("\nSolution x\n\n");
     vector_print(n, x);
 
@@ -325,8 +337,8 @@ void verify(double **a, double *b, double *x, int n)
 void gauss(double **a, double *b, double *x, int n)
 {
     int   row_idx, col_jdx, coef_idx, search_idx, pivot_row, solve_idx, rowx;
-    double xfac, temp, amax;
-
+    double xfac, temp_b, amax;
+    double *temp_a;
     if(TRACE)
     {
         printf("\nAugmented Coefficient Matrix A with RHS passed to GEWPP\n");
@@ -367,19 +379,18 @@ void gauss(double **a, double *b, double *x, int n)
          // Row interchanges for partial pivot to get upper diagonal form
          if(pivot_row != search_idx) 
          {  
-             printf("Row swaps with pivot_row=%d, search_idx=%d\n", pivot_row, search_idx);
+            //limit output to trace runs
+            if(TRACE) printf("Row swaps with pivot_row=%d, search_idx=%d\n", pivot_row, search_idx);
 
              rowx = rowx+1;
-             temp = b[search_idx];
+             temp_b = b[search_idx];
              b[search_idx]  = b[pivot_row];
-             b[pivot_row]  = temp;
+             b[pivot_row]  = temp_b;
 
-             for(col_jdx=search_idx; col_jdx < n; col_jdx++) 
-             {
-                 temp = a[search_idx][col_jdx];
-                 a[search_idx][col_jdx] = a[pivot_row][col_jdx];
-                 a[pivot_row][col_jdx] = temp;
-             }
+             //removed the for loop and simply swapped pointers following example above
+             temp_a = a[search_idx];
+             a[search_idx] = a[pivot_row];
+             a[pivot_row] = temp_a;
 
              if(TRACE)
              {
@@ -391,6 +402,9 @@ void gauss(double **a, double *b, double *x, int n)
           // Row scaling to get zero in corresponding column
           for (row_idx=search_idx+1; row_idx < n; ++row_idx) 
           {
+              //reduce computation by skipping elimination where value is already 0
+              if(a[row_idx][search_idx] == 0.0) continue;
+
               xfac = a[row_idx][search_idx] / a[search_idx][search_idx];
 
               if(TRACE) printf("coeff1=%lf, coeff2=%lf, xfac=%lf\n", a[row_idx][search_idx], a[search_idx][search_idx], xfac);

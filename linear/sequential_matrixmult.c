@@ -59,10 +59,10 @@ int main(){
     //allocate memory for matricies to support 1000x1000 memory
     double (*A)[N] = malloc(sizeof(double[N][N]));
     double (*B)[N] = malloc(sizeof(double[N][N]));
-    double (*C)[N] = calloc(N, sizeof(double[N]));  
+    double (*C)[N] = malloc(sizeof(double[N]));  
     double *x = malloc(N * sizeof(double));
-    double *y = calloc(N, sizeof(double));      
- 
+    double *y = malloc(n* sizeof(double));      
+
     //zero out the resulting C matrix
     for (int row = 0; row < N; row++)
     {
@@ -119,5 +119,6 @@ int main(){
     */
     printf("Vector multiplication time:%lf\n", fnow-fstart);
 
+    free(A); free(B); free(C); free(x); free(y);
     return 0;
 }

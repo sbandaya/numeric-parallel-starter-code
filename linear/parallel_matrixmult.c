@@ -2,13 +2,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include <om.h> 
+#include <omp.h> 
 
 #define NUM_THREADS (4)
 //multiply an NxN matrix A by an NxN matrix of the same size B generating resulting NxN matrix C 
 void matrix_mult(int N, double A[N][N], double B[N][N], double C[N][N])
 { 
-#pragma omp paralllel for num_threads(NUM_THREADS)
+#pragma omp parallel for num_threads(NUM_THREADS) collapse(2)
     for(int row = 0; row < N; row++)
     {
         for(int col = 0 ; col < N; col++)
@@ -24,7 +24,7 @@ void matrix_mult(int N, double A[N][N], double B[N][N], double C[N][N])
 //multiply an NxN matrix A by a N column vector X generating resulting column vector Y
 void column_mult(int N, double A[N][N], double X[N], double Y[N])
 {
-#pragma omp paralllel for num_threads(NUM_THREADS)
+#pragma omp parallel for num_threads(NUM_THREADS)
     for(int row = 0; row < N; row++)
     {
         for(int col = 0 ; col < N; col++)
@@ -122,6 +122,6 @@ int main(){
     print_vec(N, y);
     */
     printf("Vector multiplication time:%lf\n", fnow-fstart);
-
+    free(A); free(B); free(C); free(x); free(y);
     return 0;
 }
