@@ -76,7 +76,6 @@ int main(int argc, char** argv)
   if(my_rank == 0)
   {
       fnow = MPI_Wtime();
-      printf("stop test at %lf\n", );
       printf("20 decimals of pi  =3.14159265358979323846\n");
       printf("C math library pi  =%15.14lf\n", M_PI);
       printf("Madhava-Leibniz pi =%15.14lf, ppb error=%15.14lf\n", (4.0*g_sum), 1000000000.0*(M_PI - (4.0*g_sum)));
