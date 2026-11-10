@@ -252,7 +252,7 @@ int main (int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &end);
     fstart=start.tv_sec + (start.tv_nsec / 1000000000.0);
     fend=end.tv_sec + (end.tv_nsec / 1000000000.0);
-    printf("\n Verify solution x in %lf ", (fend-fstart));
+    printf("\n Verify solution x in %lf \n", (fend-fstart));
 
     return(0);
 } 
@@ -404,10 +404,7 @@ void gauss(double **a, double *b, double *x, int n)
              }
           }
 
-          struct timespec start, end;
-          double fstart=0.0, fend=0.0;
-          clock_gettime(CLOCK_MONOTONIC, &start);
-          // Row scaling to get zero in corresponding column
+         // Row scaling to get zero in corresponding column
           for (row_idx=search_idx+1; row_idx < n; ++row_idx) 
           {
               //reduce computation by skipping elimination where value is already 0
@@ -442,14 +439,7 @@ void gauss(double **a, double *b, double *x, int n)
                   augmented_matrix_print(n, n, a, b);
               }
           }
-          
-        clock_gettime(CLOCK_MONOTONIC, &end);
-        fstart=start.tv_sec + (start.tv_nsec / 1000000000.0);
-        fend=end.tv_sec + (end.tv_nsec / 1000000000.0);
-
-
-        printf("\n Parallel portion in %lf ", (fend-fstart));
-
+         
         if(IDEBUG == 1) 
         {
             printf("\nAugmented Matrix A with RHS after lower diagonal decomposition step %d\n\n", search_idx+1);

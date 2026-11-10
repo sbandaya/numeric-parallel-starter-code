@@ -99,7 +99,7 @@ void gauss(double **a, double *b, double *x, int n);
 double verify(double **a, double *b, double *rhs, double *x, int n);
 
 // global for simple testing with various pragma locations
-int thread_count=1;
+int thread_count=2;
 
 int main (int argc, char *argv[])
 {
