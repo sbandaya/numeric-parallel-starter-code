@@ -8,15 +8,15 @@ CFLAGS= -O0 -fopenmp $(INCLUDE_DIRS) $(CDEFS)
 LIBS= 
 
 HFILES= 
-CFILES= gewpp.c gewppoff.c gewpporig.c gaussjord.c lufact.c gsit.c gsitbad.c sequential_matrixmult.c parallel_matrixmult.c
+CFILES= gewpp.c gewppoff.c gewpporig.c gaussjord.c lufact.c gsit.c gsitbad.c sequential_matrixmult.c parallel_matrixmult.c parallel_gewpp.c
 SRCS= ${HFILES} ${CFILES}
 OBJS= ${CFILES:.c=.o}
 
-all:	gewpp gewppoff gewpporig gaussjord gaussjordomp lufact gsit gsitet gsit2 gsitant gsit5 gsitbad gewppomp vmult testgen transpose sequential_matrixmult parallel_matrixmult
+all:	gewpp parallel_gewpp gewppoff gewpporig gaussjord gaussjordomp lufact gsit gsitet gsit2 gsitant gsit5 gsitbad gewppomp vmult testgen transpose sequential_matrixmult parallel_matrixmult
 
 clean:
 	-rm -f *.o *.d
-	-rm -f gewpp gewppoff gewpporig gaussjord gaussjordomp lufact gsit gsitet gsitant gewppomp vmult testgen gsit2 gsit5 gsitbad transpose sequential_matrixmult
+	-rm -f gewpp parallel_gewpp gewppoff gewpporig gaussjord gaussjordomp lufact gsit gsitet gsitant gewppomp vmult testgen gsit2 gsit5 gsitbad transpose sequential_matrixmult
 
 distclean:
 	-rm -f *.o *.d
@@ -33,6 +33,9 @@ parallel_matrixmult: parallel_matrixmult.o
 
 gewpp: gewpp.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o
+
+parallel_gewpp: parallel_gewpp.o
+	$(CC) $(LDFLAGS) -fopenmp $(CFLAGS) -o $@ $@.o
 
 gewppoff: gewppoff.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o
