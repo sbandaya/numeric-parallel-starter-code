@@ -247,7 +247,12 @@ int main (int argc, char *argv[])
     vector_print(n, x);
 
     // Multiply solution "x" by matrix "a" to verify we get RHS "bsave"
+    clock_gettime(CLOCK_MONOTONIC, &start);
 	verify(asave, bsave, x, n); 
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    fstart=start.tv_sec + (start.tv_nsec / 1000000000.0);
+    fend=end.tv_sec + (end.tv_nsec / 1000000000.0);
+    printf("\n Verify solution x in %lf ", (fend-fstart));
 
     return(0);
 } 
@@ -399,6 +404,9 @@ void gauss(double **a, double *b, double *x, int n)
              }
           }
 
+          struct timespec start, end;
+          double fstart=0.0, fend=0.0;
+          clock_gettime(CLOCK_MONOTONIC, &start);
           // Row scaling to get zero in corresponding column
           for (row_idx=search_idx+1; row_idx < n; ++row_idx) 
           {
@@ -434,6 +442,13 @@ void gauss(double **a, double *b, double *x, int n)
                   augmented_matrix_print(n, n, a, b);
               }
           }
+          
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        fstart=start.tv_sec + (start.tv_nsec / 1000000000.0);
+        fend=end.tv_sec + (end.tv_nsec / 1000000000.0);
+
+
+        printf("\n Parallel portion in %lf ", (fend-fstart));
 
         if(IDEBUG == 1) 
         {

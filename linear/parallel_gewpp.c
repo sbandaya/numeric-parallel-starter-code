@@ -84,6 +84,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <omp.h>
 
 #define ICHAR 80  // Length of array holding description of the problem
 #define IDEBUG 0  // Flag to enable printing of intermediate results of decomposition =1 yes, =0 no.
@@ -406,8 +407,11 @@ void gauss(double **a, double *b, double *x, int n)
              }
           }
 
+           struct timespec start, end;
+           double fstart=0.0, fend=0.0;
+           clock_gettime(CLOCK_MONOTONIC, &start);
           // Row scaling to get zero in corresponding column
-#pragma omp parallel for num_threads(thread_count) private(xfac, col_jdx) shared(a, b, n, search_idx)
+#pragma omp parallel for num_threads(NUM_THREADS) private(xfac, col_jdx) shared(a, b, n, search_idx)
           for (row_idx=search_idx+1; row_idx < n; ++row_idx) 
           {
               //reduce computation by skipping elimination where value is already 0
@@ -442,7 +446,10 @@ void gauss(double **a, double *b, double *x, int n)
                   augmented_matrix_print(n, n, a, b);
               }
           }
-
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        fstart=start.tv_sec + (start.tv_nsec / 1000000000.0);
+        fend=end.tv_sec + (end.tv_nsec / 1000000000.0);
+        printf("\n parallel portion %lf ", (fend-fstart));
         if(IDEBUG == 1) 
         {
             printf("\nAugmented Matrix A with RHS after lower diagonal decomposition step %d\n\n", search_idx+1);
