@@ -5,7 +5,9 @@
 #include <string.h>
 #include <stdint.h>
 
-//allows for all semiprimes up to 64 bits
+
+
+//counts all primes from 0 - 2^32 Billion and factors any semi-prime <= 2^64
 #define MAX (4294967296ULL)
 
 // Set your CPU's L1 data cache size (in bytes) here
@@ -156,7 +158,17 @@ int main(int argc, char *argv[])
         exit(-1);
     }
     SP = strtoull(argv[1], &endptr, 10);
+
+    double fstart, fnow;
+    struct timespec start, now;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    fstart = (double)start.tv_sec  + (double)start.tv_nsec / 1000000000.0;
+    
     sd = segmented_sieve((int64_t)MAX,SP);
+
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+    printf("Sieve completed in:%lf\n", fnow-fstart);
 
     printf("\nNumber of primes [0..%llu]=%lld\n\n", MAX, sd.count);
     printf("largest prime: %llu\n", sd.largest);
