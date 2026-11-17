@@ -88,7 +88,7 @@ int main(void)
         regula (&x3, x0, x1, f(x0), f(x1), &itr);
 
 
-        if (fabs(x3-x2) < allerr)
+        if (fabs(f(x3)) < allerr)
         {
             printf("After %d iterations, root = %20.15lf\n", itr, x3);
             return 0;

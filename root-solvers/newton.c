@@ -35,7 +35,7 @@ double f(double x)
     //return((x*x)+2.0*x+1.0);
 
     // FUNCTION #2
-    //return (-(x*x*x) + 9.7*(x*x) -1.3*x -105.7);
+    return (-(x*x*x) + 9.7*(x*x) -1.3*x -105.7);
 
     // FUNCTION #3
     //return x*log10(x) - 1.2;
@@ -51,7 +51,7 @@ double f(double x)
     //return cos(x);
 
     // FUNCTION #7
-    return sin(x);
+    //return sin(x);
 }
 
 // model the derivative of that function using calculus and check your answer
@@ -70,7 +70,7 @@ double df (double x)
 
     // FUNCTION #2 Slope
     // As can be seen with Desmos, this example equation has roots near: -2.851, 4.758, and 7.792
-    //return (-3.0*(x*x) + 19.4*(x) -1.3);
+    return (-3.0*(x*x) + 19.4*(x) -1.3);
 
     // FUNCTION #3 Slope
     //return log10(x) + 0.43429;
@@ -86,7 +86,7 @@ double df (double x)
     //return -sin(x);
 
     // FUNCTION #7 Slope
-    return cos(x);
+    //return cos(x);
 
     // BAD SLOPES - can cause divergence and failure of Newton method
     //
