@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
         // Compute next guess based on x0 based on h = x0 - x1
         x1=x0-h;
 
-        printf(" At Iteration no. %3d, x = %9.6f, f[x1]=%15.14lf\n", itr, x1, f(x1));
+        //printf(" At Iteration no. %3d, x = %9.6f, f[x1]=%15.14lf\n", itr, x1, f(x1));
 
         // Error is simply the absolut difference between x0 and x1 and with convergence, x0 and x1 eventually
         // become the same within our tolerance and we quit.
@@ -191,11 +191,12 @@ int main(int argc, char *argv[])
         //
         if (fabs(f(x1)) < allerr)
         {
+            clock_gettime(CLOCK_MONOTONIC, &now);
+            fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+            printf("newton completed in:%lf\n", fnow-fstart);
             printf("After %3d iterations, root = %20.15f\n", itr, x1);
             printf("CHECK: f[root]=%20.14lf, tolerance=%15.14lf, h=%15.14lf\n", f(x1), allerr, fabs(x0-x1));
-                clock_gettime(CLOCK_MONOTONIC, &now);
-                fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
-                printf("newton completed in:%lf\n", fnow-fstart);
+
             // Quit when we find a root that meets error tolerance
             return 0;
         }

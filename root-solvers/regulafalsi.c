@@ -53,7 +53,7 @@ void regula (double *x, double x0, double x1, double fx0, double fx1, int *itr)
 
     ++(*itr);
 
-    printf("Iteration no. %3d X = %7.5f \n", *itr, *x);
+    //printf("Iteration no. %3d X = %7.5f \n", *itr, *x);
 }
 
 
@@ -101,10 +101,10 @@ int main(int argc, char * argv[])
 
         if (fabs(f(x3)) < allerr)
         {
+            clock_gettime(CLOCK_MONOTONIC, &now);
+            fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+            printf("falsi completed in:%lf\n", fnow-fstart);
             printf("After %d iterations, root = %20.15lf\n", itr, x3);
-                clock_gettime(CLOCK_MONOTONIC, &now);
-                fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
-                printf("falsi completed in:%lf\n", fnow-fstart);
             return 0;
         }
 
