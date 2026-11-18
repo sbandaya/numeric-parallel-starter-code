@@ -17,7 +17,7 @@
 #include <math.h>
 #include <float.h>
 #include <stdlib.h>
-
+#include <time.h>
 // model a function with desmos for example to "see" roots
 // 
 // https://www.desmos.com/calculator
@@ -100,19 +100,27 @@ double df (double x)
 
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
     int itr, maxitr, nudge;
     double h, x0, x1, allerr, x0sav;
 
-    printf("\nEnter x0, allowed error and maximum iterations\n");
-    scanf("%lf %lf %d", &x0, &allerr, &maxitr);
+    if (argc != 4)
+    {
+        printf("Usage: %s <x0> <allowed error> <max iterations>\n", argv[0]);
+        exit(-1);
+    }
 
+    x0 = atof(argv[1]);
+    allerr = atof(argv[2]);
+    maxitr = atoi(argv[3]);
     // GUESS ADJUSTMENT LOGIC - suggested by fall 2022 class
     //
     // Check for ZERO slope at guess - this will cause NR to diverge!
     //
     // A new and better guess will be required
+    
+
     if(fabs(df(x0)) < allerr)
     {
         printf("Slope of function at guess is %lf, which is too close to zero\n", df(x0));
@@ -144,6 +152,11 @@ int main(void)
 
     x0sav = x0;
     printf("x0=%lf, err=%lf, max iter=%d\n", x0, allerr, maxitr);
+
+    double fstart, fnow;
+    struct timespec start, now;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    fstart = (double)start.tv_sec  + (double)start.tv_nsec / 1000000000.0;
 
     for (itr=1; itr<=maxitr; itr++)
     {
@@ -180,7 +193,9 @@ int main(void)
         {
             printf("After %3d iterations, root = %20.15f\n", itr, x1);
             printf("CHECK: f[root]=%20.14lf, tolerance=%15.14lf, h=%15.14lf\n", f(x1), allerr, fabs(x0-x1));
-
+                clock_gettime(CLOCK_MONOTONIC, &now);
+                fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+                printf("newton completed in:%lf\n", fnow-fstart);
             // Quit when we find a root that meets error tolerance
             return 0;
         }
@@ -188,6 +203,8 @@ int main(void)
         x0=x1;
 
     }
+
+
 
     // If we did not achieve our error tolerance before max iterations, indicate potential failure
     printf("x0=%lf, err=%lf, max iter=%d\n", x0sav, allerr, maxitr);

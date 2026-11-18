@@ -18,8 +18,9 @@
 // The double false position is the fastest converging and most reliable.
 //
 #include<stdio.h>
+#include<stdlib.h>
 #include<math.h>
-
+#include<time.h>
 double f(double x)
 {
     //return cos(x) - x*exp(x);
@@ -56,17 +57,27 @@ void regula (double *x, double x0, double x1, double fx0, double fx1, int *itr)
 }
 
 
-int main(void)
+int main(int argc, char * argv[])
 {
     int itr = 0, maxmitr;
     double x0,x1,x2,x3,allerr;
 
-    printf("\nEnter the values of x0, x1, allowed error and maximum iterations:\n");
-    scanf("%lf %lf %lf %d", &x0, &x1, &allerr, &maxmitr);
-
+    if (argc != 5)
+    {
+        printf("Usage: %s <x0> <x1> <allowed error> <max iterations>\n", argv[0]);
+        exit(-1);
+    }
+    x0 = atof(argv[1]);
+    x1 = atof(argv[2]);
+    allerr = atof(argv[3]);
+    maxmitr = atoi(argv[4]);
     printf("x0=%lf, x1=%lf, err=%lf, iter=%d\n", x0, x1, allerr, maxmitr);
 
 
+    double fstart, fnow;
+    struct timespec start, now;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    fstart = (double)start.tv_sec  + (double)start.tv_nsec / 1000000000.0;
     // Get the first value for the intersection of the SECANT on the interval
     regula (&x2, x0, x1, f(x0), f(x1), &itr);
 
@@ -91,6 +102,9 @@ int main(void)
         if (fabs(f(x3)) < allerr)
         {
             printf("After %d iterations, root = %20.15lf\n", itr, x3);
+                clock_gettime(CLOCK_MONOTONIC, &now);
+                fnow = (double)now.tv_sec  + (double)now.tv_nsec / 1000000000.0;
+                printf("falsi completed in:%lf\n", fnow-fstart);
             return 0;
         }
 
@@ -98,6 +112,8 @@ int main(void)
         x2=x3;
     }
     while (itr<maxmitr);
+
+
 
     printf("Solution does not converge or iterations not sufficient:\n");
     return 1;
