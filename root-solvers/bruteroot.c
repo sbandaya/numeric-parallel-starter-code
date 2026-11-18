@@ -83,13 +83,13 @@ int main(int argc, char * argv[])
     fstart = (double)start_t.tv_sec  + (double)start_t.tv_nsec / 1000000000.0;
 
     //total number of steps to be divided among threads replacing while loop
-    double total_steps = ((xfinal - local_start) / step) +1
+    unsigned long long total_steps = (unsigned long long)((xfinal - local_start) / step) +1;
     
     //divides total number of steps among threads summing total number of roots and finding max error among threads
     #pragma omp parallel for num_threads(NUM_THREADS) private(x1, sign_changed) reduction(+:rootfound) reduction(max:max_error)
     for (itr=0; itr < total_steps; itr++) // find next root on sub-interval
     {
-        double local_start = start + itr*step
+        double local_start = start + itr*step;
         x1= local_start + step;
 
         // Any difference in sign between local_start and x1 will result in a sign_changed
@@ -107,7 +107,7 @@ int main(int argc, char * argv[])
 
         // Osculating ROOT case
         //
-        else if( fabs(f((x1+local_start)/2.0)) < step && !(fabs(f(xa-step/2.0)) < step)) // hit zero within tolerance - special case for osculating functions
+        else if( fabs(f((x1+local_start)/2.0)) < step && !(fabs(f(local_start-step/2.0)) < step)) // hit zero within tolerance - special case for osculating functions
         {
             //printf("\n*** Osculating ZERO at %lld iterations: estimated DOUBLE root at %16.15lf, f[root]=%16.15lf\n",  total_itr+itr, (x1+local_start)/2.0, f((x1+local_start)/2.0));
             if(fabs(f((x1+local_start)/2.0)) > max_error) max_error=fabs(f((x1+local_start)/2.0));
@@ -127,17 +127,13 @@ int main(int argc, char * argv[])
     printf(".");
     fflush(stdout);
 
-    local_start=x1;
-    itr=1;
-
-
     clock_gettime(CLOCK_MONOTONIC, &stop_t);
     fstop = (double)stop_t.tv_sec  + (double)stop_t.tv_nsec / 1000000000.0;
     printf("\n\nSearch Results (competed in %lf milliseconds):\n", (fstop-fstart)*1000.0);
 
     if(!rootfound)
     {
-        printf("After %lld iterations: No solution (zero crossing) found on interval %lf to %lf\n", itr, start, local_start);
+        printf("After %lld iterations: No solution (zero crossing) found on interval %lf to %lf\n", total_itr, start, local_start);
     }
     else
     {
