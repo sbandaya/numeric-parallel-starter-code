@@ -22,10 +22,12 @@
 // not cross the X axis with a sign change.
 //
 #include <stdio.h>
+#include<stdlib.h>
 #include <math.h>
 #include <float.h>
 #include <time.h>
-
+#include <omp.h>
+#define NUM_THREADS 1
 // First model a function with desmos.com for example to "see" roots
 // 
 // https://www.desmos.com/calculator
@@ -35,13 +37,13 @@ double f(double x)
     // Fill in your function here using the math library
 
     //return x*log10(x) - 1.2;
-    //return cos(x*x);
+    return cos(x*x);
     //return cos(x);
     //return sin(x);
     //return sin(x*x);
 
     //return((x*x)+(2.0*x)+1);
-    return((x*x)+(2.0*x)+2);
+    //return((x*x)+(2.0*x)+2);
 
     // Note this osculating parabola will break brute-root as there is no
     // sign change to detect - can we fix this?
@@ -52,101 +54,82 @@ double f(double x)
     // return (-(x*x*x) + 9.7*(x*x) -1.3*x -105.7);
 }
 
-int main(void)
+int main(int argc, char * argv[])
 {
     unsigned long long itr, maxitr, total_itr=0;
     unsigned int rootfound=0;
     double max_error=0.0, fstart=0.0, fstop=0.0;
-    double step=2.0*DBL_EPSILON, x0, x1, xfinal, sign_changed=0, start;
+    double step=2.0*DBL_EPSILON, local_start, x1, xfinal, sign_changed=0, start;
     struct timespec start_t, stop_t;
 
 
     printf("smallest step is 2x epsilon is %20.19lf", (double)(2.0* DBL_EPSILON));
 
-    printf("\nEnter x0 start, xfinal end, step size and maximum iterations to search for each root on sub-interval of 1.0\n");
-    scanf("%lf %lf %lf %lld", &x0, &xfinal, &step, &maxitr);
-    start=x0;
+    if (argc != 5)
+    {
+        printf("Usage: %s <local_start> <xfinal> <step> <max iterations>\n", argv[0]);
+        exit(-1);
+    }
+    local_start = atof(argv[1]);
+    xfinal = atof(argv[2]);
+    step = atof(argv[3]);
+    maxitr = atoi(argv[4]);
+    start=local_start;
 
     printf("\nWill step at %20.19lf from %lf to %lf to find each root, with %lld total search steps\n\n",
-           step, x0, xfinal, (((unsigned)(xfinal-x0)+1)*maxitr));
+           step, local_start, xfinal, (((unsigned)(xfinal-local_start)+1)*maxitr));
     printf("Starting search:\n");
     clock_gettime(CLOCK_MONOTONIC, &start_t);
     fstart = (double)start_t.tv_sec  + (double)start_t.tv_nsec / 1000000000.0;
 
-
-    // while there are potentially more roots on the search interval
-    //
-    // exit outter loop search for all roots if end of search interval reached or
-    // we have executed max iterations
-    //
-    while((x0 <  xfinal) && (total_itr < (maxitr*maxitr)))
+    //total number of steps to be divided among threads replacing while loop
+    double total_steps = ((xfinal - local_start) / step) +1
+    
+    //divides total number of steps among threads summing total number of roots and finding max error among threads
+    #pragma omp parallel for num_threads(NUM_THREADS) private(x1, sign_changed) reduction(+:rootfound) reduction(max:max_error)
+    for (itr=0; itr < total_steps; itr++) // find next root on sub-interval
     {
-        for (itr=1; (itr<=maxitr); itr++) // find next root on sub-interval
+        double local_start = start + itr*step
+        x1= local_start + step;
+
+        // Any difference in sign between local_start and x1 will result in a sign_changed
+        // less than zero - a crossing has been detected
+        sign_changed = f(local_start) * f(x1);
+
+        // X-axis Crossing ROOT case
+        //
+        if(sign_changed < 0.0)
         {
-
-            x1=x0+step;
-
-            // Any difference in sign between x0 and x1 will result in a sign_changed
-            // less than zero - a crossing has been detected
-            sign_changed = f(x0) * f(x1);
-
-            // X-axis Crossing ROOT case
-            //
-            if(sign_changed < 0.0)
-            {
-                printf("\n*** Sign change at %lld iterations: estimated root at %16.15lf, f[root]=%16.15lf\n",
-                       total_itr+itr, (x1+x0)/2.0, f((x1+x0)/2.0));
-
-                if(fabs(f((x1+x0)/2.0)) > max_error) max_error=fabs(f((x1+x0)/2.0));
-
-                rootfound++;
-
-                // We can exit on first root (zero crossing found) or keep looking
-                break;
-            }
-
-            // Osculating ROOT case
-            //
-            else if( fabs(f((x1+x0)/2.0)) < step) // hit zero within tolerance - special case for osculating functions
-            {
-                printf("\n*** Osculating ZERO at %lld iterations: estimated DOUBLE root at %16.15lf, f[root]=%16.15lf\n",
-                       total_itr+itr, (x1+x0)/2.0, f((x1+x0)/2.0));
-
-                if(fabs(f((x1+x0)/2.0)) > max_error) max_error=fabs(f((x1+x0)/2.0));
-
-                // Because by math rules, this must be a double root
-                rootfound=rootfound+2;
-
-                // We need to now step away from the ZERO osculating intersection
-                while( fabs(f((x1+x0)/2.0)) < step )
-                {
-                    x0=x1;
-                    x1=x0+step;
-                }
-
-                // We can exit on first root (zero within tolerance) or keep looking
-                break;
-            }
-
-            // End of search interval hit
-            if(x0 > xfinal) { 
-                printf("Hit end of serach interval\n"); break; 
-            }
-
-            x0=x1; // advance the step interval
+            //printf("\n*** Sign change at %lld iterations: estimated root at %16.15lf, f[root]=%16.15lf\n", total_itr+itr, (x1+local_start)/2.0, f((x1+local_start)/2.0));
+            if(fabs(f((x1+local_start)/2.0)) > max_error) max_error=fabs(f((x1+local_start)/2.0));
+            rootfound++;
         }
 
-        // Re-start search for next root one step beyond last one found
-        total_itr += itr;
+        // Osculating ROOT case
+        //
+        else if( fabs(f((x1+local_start)/2.0)) < step && !(fabs(f(xa-step/2.0)) < step)) // hit zero within tolerance - special case for osculating functions
+        {
+            //printf("\n*** Osculating ZERO at %lld iterations: estimated DOUBLE root at %16.15lf, f[root]=%16.15lf\n",  total_itr+itr, (x1+local_start)/2.0, f((x1+local_start)/2.0));
+            if(fabs(f((x1+local_start)/2.0)) > max_error) max_error=fabs(f((x1+local_start)/2.0));
 
-        // Indicate searching progress
-        printf(".");
-        fflush(stdout);
+            // Because by math rules, this must be a double root
+            rootfound=rootfound+2;
+        }
 
-        x0=x1;
-        itr=1;
+    }
 
-    } // end while
+
+    //matches output for original implementation
+    total_itr = total_steps;
+    local_start = start + total_steps*step;
+
+    // Indicate searching progress
+    printf(".");
+    fflush(stdout);
+
+    local_start=x1;
+    itr=1;
+
 
     clock_gettime(CLOCK_MONOTONIC, &stop_t);
     fstop = (double)stop_t.tv_sec  + (double)stop_t.tv_nsec / 1000000000.0;
@@ -154,12 +137,12 @@ int main(void)
 
     if(!rootfound)
     {
-        printf("After %lld iterations: No solution (zero crossing) found on interval %lf to %lf\n", itr, start, x0);
+        printf("After %lld iterations: No solution (zero crossing) found on interval %lf to %lf\n", itr, start, local_start);
     }
     else
     {
         printf("%d roots found on interval %lf to %lf, with max error=%lf in %lld iterations\n",
-               rootfound, start, x0, max_error, total_itr);
+               rootfound, start, local_start, max_error, total_itr);
     }
 
     return 1;

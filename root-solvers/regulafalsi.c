@@ -26,8 +26,10 @@ double f(double x)
     //return cos(x) - x*exp(x);
 
     // As can be seen with Desmos, this example equation has roots near: -2.851, 4.758, and 7.792
-    return (-(x*x*x) + 9.7*(x*x) -1.3*x -105.7);
+    //return (-(x*x*x) + 9.7*(x*x) -1.3*x -105.7);
+    //return (-1.5 * x) + 2.5 + sin(x*x);
     //return cos(x*x);
+    return cos(x*x) - ((-1.5 * x) + 2.5 + sin(x*x));
 }
 
 void regula (double *x, double x0, double x1, double fx0, double fx1, int *itr)
